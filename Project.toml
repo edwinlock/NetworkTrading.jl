@@ -1,6 +1,6 @@
 name = "NetworkTrading"
 uuid = "c51a1053-3d0b-4f24-aa10-034b6d6fd53d"
-authors = ["Edwin Lock <edwinlock@users.noreply.github.com> and contributors"]
+authors = ["Edwin Lock <mail@edwinlock.com> and contributors"]
 version = "1.0.0-DEV"
 
 [deps]
