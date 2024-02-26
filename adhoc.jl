@@ -22,15 +22,12 @@ offers = [
     Dict(1 => 21, 2=>16),
     Dict(2 => 1)
 ]
-type = ["seller", "intermediary", "buyer"]
 market = Market(Ω; valuation=valuation, demand=demand, offers=offers)
 # market.offers[1] = Dict(1 => 6); market.offers[2] = Dict(1 => 5, 2 => 6); market.offers[3] = Dict(2 => 6)
 steps, data = @time dynamic(market)
 plot_offers(market, data)
 plot_satisfied(market, data)
 plot_welfare(market, data)
-
-
 
 ### Test with one seller (1) and three buyers (2,3,4)
 Ω = [(1,2), (1,3), (1,4)]
@@ -52,9 +49,8 @@ offers = [
     Dict(2 => 1),
     Dict(3 => 1),
 ]
-type = ["seller", "buyer", "buyer", "buyer"]
 market = Market(Ω; valuation=valuation, demand=demand, offers=offers)
-data = @time dynamic(market)
+steps, data = @time dynamic(market)
 plot_offers(market, data)
 plot_satisfied(market, data)
 plot_welfare(market, data)

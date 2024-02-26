@@ -30,7 +30,6 @@ end
 
 ### Utilities
 
-
 """
 Determine whether agent i is seller/buyer of trade ω in list of trades Ω.
 """
