@@ -25,8 +25,7 @@ Return utility function for arbitrary agents.
 """
 function generate_utility(i, Ω, valuation)
     i, Ω = i, Ω
-    trades = associated_trades(i, Ω)
-    return function unit_utility(p, Ψ)
+    return function utility(p, Ψ)
         return valuation(Ψ) - sum(χ(i, ω, Ω)*p[ω] for ω ∈ Ψ; init=0)
     end
 end

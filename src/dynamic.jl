@@ -48,20 +48,6 @@ end
 
 
 """
-Retrieve the offers of agent i's neighbours.
-"""
-function neighbouring_offers(i::Int, offers, market::Market)::Dict{Int,Int}
-    prices = Dict{Int,Int}()
-    for ω ∈ market.trades[i]  # Set p[ω] to the offer of counterpart of trade    
-        j = counterpart(i, ω, market.Ω)
-        prices[ω] = offers[j][ω]
-    end
-    return prices
-end
-neighbouring_offers(i::Int, market::Market) = neighbouring_offers(i, market.offers, market)
-
-
-"""
 Compute updated offers of agent i given market prices p and demanded bundle Ψ.
 """
 function updated_offers(i, p, Ψ, market::Market)

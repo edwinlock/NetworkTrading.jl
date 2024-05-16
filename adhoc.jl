@@ -61,6 +61,6 @@ market = RandomBipartiteUnitMarket(10,10,0.25);
 steps, data = @time dynamic(market);
 # plot_offers(market, data)
 plot_satisfied(market, data)
-# plot_welfare(market, data)
+plot_welfare(market, data)
 
 

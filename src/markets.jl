@@ -2,8 +2,8 @@ struct Market
     n::Int  # number of agents
     m::Int  # number of trades
     Ω::Vector{Tuple{Int,Int}}  # list of trades given as ordered pairs (seller, buyer)
-    trades::Vector{Set{Int}}  # trades of agent i for each agent
-    offers::Vector{Dict{Int,Int}}  # for each agent, dict mapping trades to offer
+    trades::Vector{Set{Int}}  # set of trades for each agent
+    offers::Vector{Dict{Int,Int}}  # dict mapping trades to offer for each agent
     unsatisfied::Set{Int}  # set of unsatisfied agents in the market
     valuation::Vector{Function}
     utility::Vector{Function}
@@ -13,13 +13,14 @@ struct Market
     function Market(Ω; offers, valuation, demand)
         m = length(Ω)  # number of trades
         n = length(valuation)  # number of agents
+
         # Check that input is consistent
         length(demand) ≠ length(valuation) && error("Valuation and demand must have same length.")
         ([t[1] for t in Ω] ∪ [t[2] for t in Ω]) ⊆ 1:n || error("Agents specified in trade must be subset of 1:length(types).")
         any(t[1]==t[2] for t in Ω) && error("Network cannot contain loops (trades from an agent to itself).")
+        
         # Construct data structures
         trades_per_agent = [associated_trades(i, Ω) for i ∈ 1:n]
-        # offers = [Dict(ω => rand(MINVAL:MAXVAL) for ω ∈ trades_per_agent[i]) for i ∈ 1:n]
         unsatisfied = Set(1:n)
         utility = [generate_utility(i, Ω, valuation[i]) for i ∈ 1:n]
         new(n, m, Ω, trades_per_agent, offers, unsatisfied, valuation, utility, demand)
@@ -78,9 +79,46 @@ end
 
 
 """
+Retrieve the offers of agent i's neighbours.
+"""
+function neighbouring_offers(i::Int, offers, market::Market)::Dict{Int,Int}
+    prices = Dict{Int,Int}()
+    for ω ∈ market.trades[i]  # Set prices[ω] to the offer of counterpart of trade    
+        j = counterpart(i, ω, market.Ω)
+        prices[ω] = offers[j][ω]
+    end
+    return prices
+end
+neighbouring_offers(i::Int, market::Market) = neighbouring_offers(i, market.offers, market)
+
+
+"""
+Compute indirect utility of agent i at prices p in market.
+"""
+function indirect_utility(i, p, market::Market)
+    Ψ = market.demand[i](p)
+    return market.utility[i](p, Ψ)
+end
+
+
+"""
+Compute welfare (aggregate utility) of market with specified offers.
+"""
+function welfare(offers, market::Market)
+    welfare_sum = 0
+    for i in 1:market.n
+        p = neighbouring_offers(i, offers, market)
+        welfare_sum += indirect_utility(i, p, market)
+    end
+    return welfare_sum
+end
+welfare(market::Market) = welfare(market.offers, market)
+
+
+"""
 Compute active trades and prices. Returns prices and set of trades (p, Ψ).
 """
-function active(offers, market::Market)
+function active_trades(offers, market::Market)
     # Compute trades for which both offers agree, and their prices.
     Ψ = Set{Int}()
     p = Dict{Int,Int}()
@@ -93,16 +131,6 @@ function active(offers, market::Market)
     end
     return p, Ψ
 end
-
-
-"""
-Compute welfare (aggregate utility) of market with specified offers.
-"""
-function welfare(offers, market::Market)
-    p, Ψ = active(offers, market::Market)    
-    return sum(market.utility[i](p,Ψ) for i ∈ 1:market.n;init=0)
-end
-welfare(market::Market) = welfare(market.offers, market)
 
 
 ### Convenience constructors
