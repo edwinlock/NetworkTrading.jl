@@ -1,6 +1,5 @@
-using Plots
-
-# plotlyjs()
+# using Plots
+using PlotlyJS
 
 function plot_offers(market, data)
     xlabel, ylabel = "Steps", "Offer"
@@ -34,6 +33,6 @@ function plot_welfare(market, data)
     numsteps = length(data.offers)
     xs = 1:numsteps
     ys = [welfare(data.offers[s], market) for s ∈ xs]
-    plot(xs, ys, xlabel=xlabel, ylabel=ylabel, legend=false)
-    # scatter!(xs, ys, xlabel=xlabel, ylabel=ylabel, legend=false, lw=3, xticks=xs, yticks=ys, grid=false)
+    # plot(xs, ys, xlabel=xlabel, ylabel=ylabel, legend=false, mode="lines+markers")
+    plot(xs, ys, xlabel=xlabel, ylabel=ylabel, legend=false, lw=3, xticks=xs, yticks=ys, grid=false, mode="lines+markers")
 end

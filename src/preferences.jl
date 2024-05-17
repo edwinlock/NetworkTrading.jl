@@ -94,3 +94,46 @@ function generate_intermediary_demand(i, Ω)
         return Ψ
     end
 end
+
+"""
+Compute a random valuation for a buyer interested in two goods, 1 and 2.
+K governs the magnitude of the valuations.
+"""
+function generate_random_two_trade_buyer_valuation(K)
+    # Draw random values for the values of each bundle
+    v = zeros(Int,3)
+    v[1] = rand(0:K)
+    v[2] = rand(0:K)
+    v[3] = v[1] + v[2] - rand(0:K)
+    return function buyer_valuation(Ψ::Set{Int})::Int
+        @assert Ψ ⊆ Set([1,2]) "Ψ can only be a subset of trades 1 and 2"
+        Ψ == Set([]) && return 0
+        Ψ == Set([1]) && return v[1]
+        Ψ == Set([2]) && return v[2]
+        Ψ == Set([1,2]) && return v[3]
+    end
+end
+
+
+function generate_random_two_trade_seller_valuation(K)
+    val_fn = generate_random_two_trade_buyer_valuation(K)
+    return (Ψ) -> -val_fn(Ψ)
+end
+
+
+function generate_two_trade_demand(i, Ω, valuation)
+    i, Ω = i, Ω
+    util = generate_utility(i, Ω, valuation)
+    return function twogood_demand(p::Dict{Int, Int})
+        max_util = -1
+        max_Ψ = Set{Int}()
+        for Ψ in [Set(Int[]), Set([1]), Set([2]), Set([1,2])]
+            u = util(p, Ψ)
+            if u > max_util
+                max_util = u
+                max_Ψ = Ψ
+            end
+        end
+        return max_Ψ
+    end
+end

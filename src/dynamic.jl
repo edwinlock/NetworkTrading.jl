@@ -21,7 +21,7 @@ function dynamic(market)
         @debug "Step $(step)"
         @debug "Selected agent $(i)"
         @debug "Number of unsatisfied agents is $(length(market.unsatisfied))"
-        @debug "Current offers are $(market.offers)"
+        @debug "Current offers are $(market.offers) \n"
         step += 1
     end
     return step, data
