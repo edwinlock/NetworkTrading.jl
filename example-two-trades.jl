@@ -9,7 +9,7 @@ valuation = [
 ]
 demand = [
     generate_two_trade_demand(1, Ω, valuation[1]),
-    generate_two_trade_demand(3, Ω, valuation[2]),
+    generate_two_trade_demand(2, Ω, valuation[2]),
 ]
 offers = [
     Dict(1 => rand(0:valmax), 2 => rand(0:valmax)),
