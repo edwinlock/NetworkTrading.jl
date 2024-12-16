@@ -1,5 +1,5 @@
-# using Plots
-using PlotlyJS
+using Plots
+# using PlotlyJS
 
 function plot_offers(market, data)
     xlabel, ylabel = "Steps", "Offer"
@@ -35,4 +35,54 @@ function plot_welfare(market, data)
     ys = [welfare(data.offers[s], market) for s ∈ xs]
     # plot(xs, ys, xlabel=xlabel, ylabel=ylabel, legend=false, mode="lines+markers")
     plot(xs, ys, xlabel=xlabel, ylabel=ylabel, legend=false, lw=3, xticks=xs, yticks=ys, grid=false, mode="lines+markers")
+end
+
+
+"""
+Draw LIP of valuation with valuation points a and b in a bounding box of size
+(m+2, n+2).
+"""
+function plotLIP!(a::Vector, b::Vector, m, n; color=Symbol)
+    # diagonal line
+    plot!(
+        [a[1], b[1]],
+        [a[2], b[2]],
+        xlims=(-2, m+2),
+        ylims=(-2, n+2),
+        xticks=-2:1:m+2,
+        yticks=-2:1:n+2,
+        legend=false,
+        aspect_ratio=:equal,
+        color=color,
+        linewidth=2,
+        # showaxis=false
+    )
+    # lower horizontal line
+    plot!([-2, a[1]], [a[2], a[2]], color=color, linewidth=2)
+    # upper horizontal line
+    plot!([b[1], m+2], [b[2], b[2]], color=color, linewidth=2)
+    # lower vertical line
+    plot!([a[1], a[1]], [-2, a[2]], color=color, linewidth=2)
+    # upper vertical line
+    plot!([b[1], b[1]], [b[2], n+2], color=color, linewidth=2)
+end
+
+function plotLIP(a, b, m, n; color)
+    plot()
+    plotLIP!(a, b, m, n; color=color)
+end
+
+
+function draw_arrow!(point, direction)
+    scaling_factor = 0.5
+    endpoint = point .+ (scaling_factor .* direction)
+    plot!(
+        [point[1], endpoint[1]],
+        [point[2], endpoint[2]],
+        arrow=true,
+        color=:gray,
+        linewidth=1,
+        label=""
+    )
+    return nothing
 end

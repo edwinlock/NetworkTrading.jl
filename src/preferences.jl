@@ -1,4 +1,42 @@
+using StatsBase
+using Combinatorics
+
 const M = 10^8
+
+
+"""
+Return utility function for general agents.
+"""
+function generate_utility(i, Ω, valuation)
+    utility(p, Ψ) = valuation(Ψ) - sum(χ(i, ω, Ω)*p[ω] for ω ∈ Ψ; init=0)
+    return utility
+end
+
+
+"""
+Generate all subsets of trades in Ω associated with agent i in appropriate order.
+"""
+function all_sets(i, Ω)
+    trades = associated_trades(i, Ω) |> collect |> sort
+    pset = powerset(trades) |> collect |> reverse
+    return [Set(Φ) for Φ ∈ pset]
+    # incoming = incoming_trades(i, Ω)
+    # outgoing = outgoing_trades(i, Ω)
+    # return [intersect(incoming, Φ) ∪ setdiff(outgoing, Φ) for Φ ∈ powerset(trades)]
+end
+
+
+"""
+Return demand function for general agents. Breaks ties using leximin rule.
+"""
+function generate_demand(i, Ω, valuation)
+    utility = generate_utility(i, Ω, valuation)
+    allsets = all_sets(i, Ω)
+    return function demand(p)
+        return argmax(Ψ->utility(p, Ψ), allsets)
+    end
+end
+
 
 """
 Return valuation function for unit demand bidder.
@@ -17,17 +55,6 @@ function generate_unit_valuation(i, Ω, val::Int)
     trades = associated_trades(i, Ω)
     values = Dict(ω => val for ω ∈ trades)
     return generate_unit_valuation(i, Ω, values)
-end
-
-
-"""
-Return utility function for arbitrary agents.
-"""
-function generate_utility(i, Ω, valuation)
-    i, Ω = i, Ω
-    return function utility(p, Ψ)
-        return valuation(Ψ) - sum(χ(i, ω, Ω)*p[ω] for ω ∈ Ψ; init=0)
-    end
 end
 
 
@@ -95,45 +122,45 @@ function generate_intermediary_demand(i, Ω)
     end
 end
 
+
 """
-Compute a random valuation for a buyer interested in two goods, 1 and 2.
-K governs the magnitude of the valuations.
+Return two valuations points a and b chosen uniformly at random
+in box of width m and height n.
+
 """
-function generate_random_two_trade_buyer_valuation(K)
-    # Draw random values for the values of each bundle
-    v = zeros(Int,3)
-    v[1] = rand(0:K)
-    v[2] = rand(0:K)
-    v[3] = v[1] + v[2] - rand(0:K)
-    return function buyer_valuation(Ψ::Set{Int})::Int
-        @assert Ψ ⊆ Set([1,2]) "Ψ can only be a subset of trades 1 and 2"
-        Ψ == Set([]) && return 0
-        Ψ == Set([1]) && return v[1]
-        Ψ == Set([2]) && return v[2]
-        Ψ == Set([1,2]) && return v[3]
-    end
+function generate_params(m, n)
+    coordinates = vcat(
+        [[i,n] for i ∈ 0:m],
+        [[m,i] for i ∈ n-1:-1:0]
+    )
+    lengths = vcat(  # determine length of diagonal line for each coordinate
+        [1+min(n,i) for i ∈ 0:m],
+        [1+min(m,i) for i ∈ n-1:-1:0]
+    )
+    weights = Weights(map(x->binomial(x+1,2), lengths))  # for sampling
+    i = sample(1:length(coordinates), weights)  # sample a coordinate
+    c = coordinates[i]  # recover coordinate in question
+    k, l = sample(0:lengths[i]-1, 2; ordered=true)  # sample scaling factors
+    b = c .- k
+    a = c .- l
+    return a, b
 end
 
-
-function generate_random_two_trade_seller_valuation(K)
-    val_fn = generate_random_two_trade_buyer_valuation(K)
-    return (Ψ) -> -val_fn(Ψ)
-end
-
-
-function generate_two_trade_demand(i, Ω, valuation)
-    i, Ω = i, Ω
-    util = generate_utility(i, Ω, valuation)
-    return function twogood_demand(p::Dict{Int, Int})
-        max_util = -1
-        max_Ψ = Set{Int}()
-        for Ψ in [Set(Int[]), Set([1]), Set([2]), Set([1,2])]
-            u = util(p, Ψ)
-            if u > max_util
-                max_util = u
-                max_Ψ = Ψ
-            end
-        end
-        return max_Ψ
+"""
+Generate valuation function for Ω = {1,2} from valuation points, a and b using χ vector.
+"""
+function generate_two_trade_valuation(a::Vector{Int}, b::Vector{Int}, i, Ω)
+    χi(ω) = χ(i, ω, Ω)
+    @assert all(χi(ω) != 0 for ω ∈ 1:length(Ω))
+    # Compute entries of the valuation function
+    x = (χi(2) == -1) ? χi(1)*a[1] : χi(1)*b[1]
+    y = (χi(1) == -1) ? χi(2)*a[2] : χi(2)*b[2]
+    z = (χi(2) == 1) ? χi(1)*a[1] : χi(1)*b[1]
+    return function valuation(Ψ::Set{Int})::Int
+        @assert Ψ ⊆ Set([1,2]) "Ψ can only be a subset of trades 1 and 2."
+        Ψ == Set([1]) && return x
+        Ψ == Set([2]) && return y
+        Ψ == Set([1,2]) && return y + z
+        return 0
     end
 end

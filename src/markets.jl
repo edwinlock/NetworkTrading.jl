@@ -3,29 +3,36 @@ struct Market
     m::Int  # number of trades
     Ω::Vector{Tuple{Int,Int}}  # list of trades given as ordered pairs (seller, buyer)
     trades::Vector{Set{Int}}  # set of trades for each agent
-    offers::Vector{Dict{Int,Int}}  # dict mapping trades to offer for each agent
+    offers::Vector{Dict{Int,Int}}  # for each agent, a dict mapping trades to offers
     unsatisfied::Set{Int}  # set of unsatisfied agents in the market
-    valuation::Vector{Function}
-    utility::Vector{Function}
-    demand::Vector{Function}
-
-    # Inner constructor
-    function Market(Ω; offers, valuation, demand)
-        m = length(Ω)  # number of trades
-        n = length(valuation)  # number of agents
-
-        # Check that input is consistent
-        length(demand) ≠ length(valuation) && error("Valuation and demand must have same length.")
-        ([t[1] for t in Ω] ∪ [t[2] for t in Ω]) ⊆ 1:n || error("Agents specified in trade must be subset of 1:length(types).")
-        any(t[1]==t[2] for t in Ω) && error("Network cannot contain loops (trades from an agent to itself).")
-        
-        # Construct data structures
-        trades_per_agent = [associated_trades(i, Ω) for i ∈ 1:n]
-        unsatisfied = Set(1:n)
-        utility = [generate_utility(i, Ω, valuation[i]) for i ∈ 1:n]
-        new(n, m, Ω, trades_per_agent, offers, unsatisfied, valuation, utility, demand)
-    end
+    valuation::Vector{Function}  # for each agent, a valuation function
+    utility::Vector{Function}  # for each agent, a utility function
+    demand::Vector{Function}  # for each agent a demand function
 end
+
+# Outer constructors
+function Market(Ω::Vector{Tuple{Int,Int}}, offers, valuation, demand)
+    m = length(Ω)  # number of trades
+    n = length(valuation)  # number of agents
+
+    # Check that input is consistent
+    length(demand) ≠ length(valuation) && error("Valuation and demand must have same length.")
+    ([t[1] for t in Ω] ∪ [t[2] for t in Ω]) ⊆ 1:n || error("Agents specified in trade must be subset of 1:length(types).")
+    any(t[1]==t[2] for t in Ω) && error("Network cannot contain self-loops (trades from an agent to itself).")
+    
+    # Construct data structures
+    trades_per_agent = [associated_trades(i, Ω) for i ∈ 1:n]
+    unsatisfied = Set(1:n)
+    utility = [generate_utility(i, Ω, valuation[i]) for i ∈ 1:n]
+    return Market(n, m, Ω, trades_per_agent, offers, unsatisfied, valuation, utility, demand)
+end
+
+function Market(Ω::Vector{Tuple{Int,Int}}, offers, valuation)
+    n = length(valuation)
+    demand = [generate_demand(i, Ω, valuation[i]) for i ∈ 1:n]
+    return Market(Ω, offers, valuation, demand)
+end
+
 
 ### Utilities
 
@@ -68,13 +75,9 @@ Compute counterpart of agent i for trade ω in list of trades Ω.
 """
 function counterpart(i, ω, Ω)
     trade = Ω[ω]
-    if trade[1] == i
-        return trade[2]
-    elseif trade[2] == i
-        return trade[1]
-    else
-        error("Agent i must be involved in trade ω.")
-    end
+    trade[1] == i && return trade[2]
+    trade[2] == i && return trade[1]
+    error("Agent i must be involved in trade ω.")
 end
 
 
@@ -116,7 +119,7 @@ welfare(market::Market) = welfare(market.offers, market)
 
 
 """
-Compute active trades and prices. Returns prices and set of trades (p, Ψ).
+Compute active trades and their prices, (p, Ψ).
 """
 function active_trades(offers, market::Market)
     # Compute trades for which both offers agree, and their prices.

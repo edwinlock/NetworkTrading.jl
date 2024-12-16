@@ -1,5 +1,5 @@
 """
-Implementation of best response dynamic.
+Implementation of best response market dynamic.
 """
 
 using ProgressMeter
@@ -12,7 +12,8 @@ uniformly at random.
 function dynamic(market)
     data = (unsatisfied = Vector{Set{Int64}}(), offers = Vector{Vector{Dict{Int64, Int64}}}())
     step = 1
-    # @info "Running market with $(market.n) agents and $(market.m) trades."
+    @debug "Running market with $(market.n) agents and $(market.m) trades."
+     @debug "Initial offers are $(market.offers).\n"
     while length(market.unsatisfied) > 0
         i = rand(market.unsatisfied)  # choose unsatisfied agent uniformly at random
         best_response!(i, market)
@@ -20,8 +21,8 @@ function dynamic(market)
         push!(data.offers, copy(market.offers))
         @debug "Step $(step)"
         @debug "Selected agent $(i)"
-        @debug "Number of unsatisfied agents is $(length(market.unsatisfied))"
-        @debug "Current offers are $(market.offers) \n"
+        @debug "Number of unsatisfied agents is $(length(market.unsatisfied))."
+        @debug "Current offers are $(market.offers).\n"
         step += 1
     end
     return step, data
