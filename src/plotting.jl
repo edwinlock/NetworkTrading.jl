@@ -1,5 +1,5 @@
 using Plots
-# using PlotlyJS
+# import GR
 
 function plot_offers(market, data)
     xlabel, ylabel = "Steps", "Offer"
@@ -42,9 +42,9 @@ end
 Draw LIP of valuation with valuation points a and b in a bounding box of size
 (m+2, n+2).
 """
-function plotLIP!(a::Vector, b::Vector, m, n; color=Symbol)
+function plotLIP!(plt, a::Vector, b::Vector, m, n; color=Symbol)
     # diagonal line
-    plot!(
+    plot!(plt,
         [a[1], b[1]],
         [a[2], b[2]],
         xlims=(-2, m+2),
@@ -55,34 +55,39 @@ function plotLIP!(a::Vector, b::Vector, m, n; color=Symbol)
         aspect_ratio=:equal,
         color=color,
         linewidth=2,
+        ticks = false
         # showaxis=false
     )
     # lower horizontal line
-    plot!([-2, a[1]], [a[2], a[2]], color=color, linewidth=2)
+    plot!(plt, [-2, a[1]], [a[2], a[2]], color=color, linewidth=2)
     # upper horizontal line
-    plot!([b[1], m+2], [b[2], b[2]], color=color, linewidth=2)
+    plot!(plt, [b[1], m+2], [b[2], b[2]], color=color, linewidth=2)
     # lower vertical line
-    plot!([a[1], a[1]], [-2, a[2]], color=color, linewidth=2)
+    plot!(plt, [a[1], a[1]], [-2, a[2]], color=color, linewidth=2)
     # upper vertical line
-    plot!([b[1], b[1]], [b[2], n+2], color=color, linewidth=2)
+    plot!(plt, [b[1], b[1]], [b[2], n+2], color=color, linewidth=2)
 end
 
 function plotLIP(a, b, m, n; color)
-    plot()
-    plotLIP!(a, b, m, n; color=color)
+    plt = plot()
+    plotLIP!(plt, a, b, m, n; color=color)
+    return plt
 end
 
 
-function draw_arrow!(point, direction)
+function draw_arrow!(plt, point, direction)
+    # GR.setarrowsize(0.7)
+    # GR.setarrowstyle(2)
     scaling_factor = 0.5
     endpoint = point .+ (scaling_factor .* direction)
-    plot!(
+    plot!(plt,
         [point[1], endpoint[1]],
         [point[2], endpoint[2]],
         arrow=true,
+        arrowsize=0.1,
         color=:gray,
         linewidth=1,
-        label=""
+        # label="",
     )
     return nothing
 end

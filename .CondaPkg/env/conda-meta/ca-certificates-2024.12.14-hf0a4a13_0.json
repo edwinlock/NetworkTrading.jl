@@ -1,0 +1,50 @@
+{
+    "arch": "arm64",
+    "build": "hf0a4a13_0",
+    "build_number": 0,
+    "build_string": "hf0a4a13_0",
+    "channel": "https://conda.anaconda.org/conda-forge/osx-arm64",
+    "constrains": [],
+    "depends": [],
+    "extracted_package_dir": "/Users/edwock/.julia/scratchspaces/0b3b1443-0f03-428d-bdfb-f27f9c1191ea/root/pkgs/ca-certificates-2024.12.14-hf0a4a13_0",
+    "files": [
+        "ssl/cacert.pem",
+        "ssl/cert.pem"
+    ],
+    "fn": "ca-certificates-2024.12.14-hf0a4a13_0.conda",
+    "license": "ISC",
+    "link": {
+        "source": "/Users/edwock/.julia/scratchspaces/0b3b1443-0f03-428d-bdfb-f27f9c1191ea/root/pkgs/ca-certificates-2024.12.14-hf0a4a13_0",
+        "type": 1
+    },
+    "md5": "7cb381a6783d91902638e4ed1ebd478e",
+    "name": "ca-certificates",
+    "package_tarball_full_path": "/Users/edwock/.julia/scratchspaces/0b3b1443-0f03-428d-bdfb-f27f9c1191ea/root/pkgs/ca-certificates-2024.12.14-hf0a4a13_0.tar.bz2",
+    "paths_data": {
+        "paths": [
+            {
+                "_path": "ssl/cacert.pem",
+                "path_type": "hardlink",
+                "sha256": "807897254f383a27f45e44f49656f378abab2141ede43a4ad3c2420a597dd23f",
+                "sha256_in_prefix": "807897254f383a27f45e44f49656f378abab2141ede43a4ad3c2420a597dd23f",
+                "size_in_bytes": 294769
+            },
+            {
+                "_path": "ssl/cert.pem",
+                "path_type": "softlink",
+                "sha256_in_prefix": "807897254f383a27f45e44f49656f378abab2141ede43a4ad3c2420a597dd23f",
+                "size_in_bytes": 294769
+            }
+        ],
+        "paths_version": 1
+    },
+    "platform": "osx",
+    "requested_spec": "",
+    "sha256": "256be633fd0882ccc1a7a32bc278547e1703f85082c0789a87a603ee3ab8fb82",
+    "size": 157091,
+    "subdir": "osx-arm64",
+    "timestamp": 1734208344343,
+    "track_features": "",
+    "url": "https://conda.anaconda.org/conda-forge/osx-arm64/ca-certificates-2024.12.14-hf0a4a13_0.conda",
+    "version": "2024.12.14"
+}

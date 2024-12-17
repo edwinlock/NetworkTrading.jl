@@ -1,0 +1,151 @@
+{
+    "arch": "arm64",
+    "build": "h8a3d83b_0",
+    "build_number": 0,
+    "build_string": "h8a3d83b_0",
+    "channel": "https://conda.anaconda.org/conda-forge/osx-arm64",
+    "constrains": [],
+    "depends": [
+        "__osx >=11.0",
+        "libcxx >=18",
+        "libpng >=1.6.44,<1.7.0a0",
+        "libtiff >=4.7.0,<4.8.0a0",
+        "libzlib >=1.3.1,<2.0a0"
+    ],
+    "extracted_package_dir": "/Users/edwock/.julia/scratchspaces/0b3b1443-0f03-428d-bdfb-f27f9c1191ea/root/pkgs/openjpeg-2.5.3-h8a3d83b_0",
+    "files": [
+        "bin/opj_compress",
+        "bin/opj_decompress",
+        "bin/opj_dump",
+        "include/openjpeg-2.5/openjpeg.h",
+        "include/openjpeg-2.5/opj_config.h",
+        "lib/cmake/openjpeg-2.5/OpenJPEGConfig.cmake",
+        "lib/cmake/openjpeg-2.5/OpenJPEGConfigVersion.cmake",
+        "lib/cmake/openjpeg-2.5/OpenJPEGTargets-noconfig.cmake",
+        "lib/cmake/openjpeg-2.5/OpenJPEGTargets.cmake",
+        "lib/libopenjp2.2.5.3.dylib",
+        "lib/libopenjp2.7.dylib",
+        "lib/libopenjp2.a",
+        "lib/libopenjp2.dylib",
+        "lib/pkgconfig/libopenjp2.pc"
+    ],
+    "fn": "openjpeg-2.5.3-h8a3d83b_0.conda",
+    "license": "BSD-2-Clause",
+    "link": {
+        "source": "/Users/edwock/.julia/scratchspaces/0b3b1443-0f03-428d-bdfb-f27f9c1191ea/root/pkgs/openjpeg-2.5.3-h8a3d83b_0",
+        "type": 1
+    },
+    "md5": "4b71d78648dbcf68ce8bf22bb07ff838",
+    "name": "openjpeg",
+    "package_tarball_full_path": "/Users/edwock/.julia/scratchspaces/0b3b1443-0f03-428d-bdfb-f27f9c1191ea/root/pkgs/openjpeg-2.5.3-h8a3d83b_0.tar.bz2",
+    "paths_data": {
+        "paths": [
+            {
+                "_path": "bin/opj_compress",
+                "path_type": "hardlink",
+                "sha256": "e355bc3f7b6d748eb4ff8c05d65bd84edae222cb5034099ef2d7de3928b19845",
+                "sha256_in_prefix": "e355bc3f7b6d748eb4ff8c05d65bd84edae222cb5034099ef2d7de3928b19845",
+                "size_in_bytes": 160832
+            },
+            {
+                "_path": "bin/opj_decompress",
+                "path_type": "hardlink",
+                "sha256": "b03911b212a0a690e69a0cdb3d932026d0c7a7969f424d70041d926779677877",
+                "sha256_in_prefix": "b03911b212a0a690e69a0cdb3d932026d0c7a7969f424d70041d926779677877",
+                "size_in_bytes": 161536
+            },
+            {
+                "_path": "bin/opj_dump",
+                "path_type": "hardlink",
+                "sha256": "b22bf3945a192930340ee8731efc9bdd2949a535dbee213d47af327c73592010",
+                "sha256_in_prefix": "b22bf3945a192930340ee8731efc9bdd2949a535dbee213d47af327c73592010",
+                "size_in_bytes": 143456
+            },
+            {
+                "_path": "include/openjpeg-2.5/openjpeg.h",
+                "path_type": "hardlink",
+                "sha256": "a4d612777a74fc6986b508a4ed7bafeb69501f1253ff5921ac75621ae014f772",
+                "sha256_in_prefix": "a4d612777a74fc6986b508a4ed7bafeb69501f1253ff5921ac75621ae014f772",
+                "size_in_bytes": 64386
+            },
+            {
+                "_path": "include/openjpeg-2.5/opj_config.h",
+                "path_type": "hardlink",
+                "sha256": "beb036f202229d8db9b045077775b53ffa1b16b3f1942b340cc5e4e941b72dba",
+                "sha256_in_prefix": "beb036f202229d8db9b045077775b53ffa1b16b3f1942b340cc5e4e941b72dba",
+                "size_in_bytes": 371
+            },
+            {
+                "_path": "lib/cmake/openjpeg-2.5/OpenJPEGConfig.cmake",
+                "path_type": "hardlink",
+                "sha256": "e63a81fde6742b2941223c6c48fde1d18120f9ccfafa81fce95305123417b9cb",
+                "sha256_in_prefix": "e63a81fde6742b2941223c6c48fde1d18120f9ccfafa81fce95305123417b9cb",
+                "size_in_bytes": 2193
+            },
+            {
+                "_path": "lib/cmake/openjpeg-2.5/OpenJPEGConfigVersion.cmake",
+                "path_type": "hardlink",
+                "sha256": "42e5aaf62f6ed2c2b10e55f760a898bbe85f32d6bab136971fc4a2efd61177e6",
+                "sha256_in_prefix": "42e5aaf62f6ed2c2b10e55f760a898bbe85f32d6bab136971fc4a2efd61177e6",
+                "size_in_bytes": 2762
+            },
+            {
+                "_path": "lib/cmake/openjpeg-2.5/OpenJPEGTargets-noconfig.cmake",
+                "path_type": "hardlink",
+                "sha256": "da16206618cbb6223580e0b7cc1a5e97222299fd66882def631e478cce3a113f",
+                "sha256_in_prefix": "da16206618cbb6223580e0b7cc1a5e97222299fd66882def631e478cce3a113f",
+                "size_in_bytes": 2455
+            },
+            {
+                "_path": "lib/cmake/openjpeg-2.5/OpenJPEGTargets.cmake",
+                "path_type": "hardlink",
+                "sha256": "b5a1e119050709cc60ad8c69cc4efce0d9bc36ece883eebe7bff4b2ae7118d2e",
+                "sha256_in_prefix": "b5a1e119050709cc60ad8c69cc4efce0d9bc36ece883eebe7bff4b2ae7118d2e",
+                "size_in_bytes": 4626
+            },
+            {
+                "_path": "lib/libopenjp2.2.5.3.dylib",
+                "path_type": "hardlink",
+                "sha256": "2abd2ff0848195c8ad03e068df7a2d92be9a2643131ab1abd4fa13df0b1eccdb",
+                "sha256_in_prefix": "2abd2ff0848195c8ad03e068df7a2d92be9a2643131ab1abd4fa13df0b1eccdb",
+                "size_in_bytes": 391664
+            },
+            {
+                "_path": "lib/libopenjp2.7.dylib",
+                "path_type": "softlink",
+                "sha256_in_prefix": "2abd2ff0848195c8ad03e068df7a2d92be9a2643131ab1abd4fa13df0b1eccdb",
+                "size_in_bytes": 391664
+            },
+            {
+                "_path": "lib/libopenjp2.a",
+                "path_type": "hardlink",
+                "sha256": "1f1c8fce1f20e85c5be8f40adf691b29f739c615d99ad56258bb0da60d673a81",
+                "sha256_in_prefix": "1f1c8fce1f20e85c5be8f40adf691b29f739c615d99ad56258bb0da60d673a81",
+                "size_in_bytes": 492272
+            },
+            {
+                "_path": "lib/libopenjp2.dylib",
+                "path_type": "softlink",
+                "sha256_in_prefix": "2abd2ff0848195c8ad03e068df7a2d92be9a2643131ab1abd4fa13df0b1eccdb",
+                "size_in_bytes": 391664
+            },
+            {
+                "_path": "lib/pkgconfig/libopenjp2.pc",
+                "path_type": "hardlink",
+                "sha256": "57fc8ef1760fab52b0c7485d1bc85139f488c6436ed184ee4a3bd691f4295f33",
+                "sha256_in_prefix": "f1d9e1883b24bcde2782dc6e29fc8275adc9ef60615743212c68d578f34553b6",
+                "size_in_bytes": 614
+            }
+        ],
+        "paths_version": 1
+    },
+    "platform": "osx",
+    "requested_spec": "",
+    "sha256": "1d59bc72ca7faac06d349c1a280f5cfb8a57ee5896f1e24225a997189d7418c7",
+    "size": 319362,
+    "subdir": "osx-arm64",
+    "timestamp": 1733816781741,
+    "track_features": "",
+    "url": "https://conda.anaconda.org/conda-forge/osx-arm64/openjpeg-2.5.3-h8a3d83b_0.conda",
+    "version": "2.5.3"
+}

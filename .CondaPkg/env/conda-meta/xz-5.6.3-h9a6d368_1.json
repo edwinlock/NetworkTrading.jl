@@ -1,0 +1,39 @@
+{
+    "arch": "arm64",
+    "build": "h9a6d368_1",
+    "build_number": 1,
+    "build_string": "h9a6d368_1",
+    "channel": "https://conda.anaconda.org/conda-forge/osx-arm64",
+    "constrains": [],
+    "depends": [
+        "__osx >=11.0",
+        "liblzma 5.6.3 h39f12f2_1",
+        "liblzma-devel 5.6.3 h39f12f2_1",
+        "xz-gpl-tools 5.6.3 h9a6d368_1",
+        "xz-tools 5.6.3 h39f12f2_1"
+    ],
+    "extracted_package_dir": "/Users/edwock/.julia/scratchspaces/0b3b1443-0f03-428d-bdfb-f27f9c1191ea/root/pkgs/xz-5.6.3-h9a6d368_1",
+    "files": [],
+    "fn": "xz-5.6.3-h9a6d368_1.conda",
+    "license": "0BSD AND LGPL-2.1-or-later AND GPL-2.0-or-later",
+    "link": {
+        "source": "/Users/edwock/.julia/scratchspaces/0b3b1443-0f03-428d-bdfb-f27f9c1191ea/root/pkgs/xz-5.6.3-h9a6d368_1",
+        "type": 1
+    },
+    "md5": "1d79c34d99f1e839a06b4631df091b64",
+    "name": "xz",
+    "package_tarball_full_path": "/Users/edwock/.julia/scratchspaces/0b3b1443-0f03-428d-bdfb-f27f9c1191ea/root/pkgs/xz-5.6.3-h9a6d368_1.tar.bz2",
+    "paths_data": {
+        "paths": [],
+        "paths_version": 1
+    },
+    "platform": "osx",
+    "requested_spec": "",
+    "sha256": "84f9405312032638a7c6249573c8f50423c314c8a4d149b34b720caecc0dc83c",
+    "size": 23692,
+    "subdir": "osx-arm64",
+    "timestamp": 1733407556613,
+    "track_features": "",
+    "url": "https://conda.anaconda.org/conda-forge/osx-arm64/xz-5.6.3-h9a6d368_1.conda",
+    "version": "5.6.3"
+}
