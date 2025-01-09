@@ -37,6 +37,15 @@ function plot_welfare(market, data)
     plot(xs, ys, xlabel=xlabel, ylabel=ylabel, legend=false, lw=3, xticks=xs, yticks=ys, grid=false, mode="lines+markers")
 end
 
+function plot_lyapunov(market, data)
+    xlabel, ylabel = "Step", "Lyapunov"
+    numsteps = length(data.offers)
+    xs = 1:numsteps
+    L = generate_lyapunov_function(market)
+    ys = [L(data.offers[s][data.selected[s]]) for s in xs]
+    plot(xs, ys, xlabel=xlabel, ylabel=ylabel, legend=false, lw=3, xticks=xs, yticks=ys, grid=false, mode="lines+markers")
+end
+
 
 """
 Draw LIP of valuation with valuation points a and b in a bounding box of size
@@ -47,25 +56,25 @@ function plotLIP!(plt, a::Vector, b::Vector, m, n; color=Symbol)
     plot!(plt,
         [a[1], b[1]],
         [a[2], b[2]],
-        xlims=(-2, m+2),
-        ylims=(-2, n+2),
-        xticks=-2:1:m+2,
-        yticks=-2:1:n+2,
+        xlims=(0, m+1),
+        ylims=(0, n+1),
+        xticks=-1:1:m+1,
+        yticks=-1:1:n+1,
         legend=false,
         aspect_ratio=:equal,
         color=color,
-        linewidth=2,
+        linewidth=3,
         ticks = false
         # showaxis=false
     )
     # lower horizontal line
-    plot!(plt, [-2, a[1]], [a[2], a[2]], color=color, linewidth=2)
+    plot!(plt, [0, a[1]], [a[2], a[2]], color=color, linewidth=3)
     # upper horizontal line
-    plot!(plt, [b[1], m+2], [b[2], b[2]], color=color, linewidth=2)
+    plot!(plt, [b[1], m+1], [b[2], b[2]], color=color, linewidth=3)
     # lower vertical line
-    plot!(plt, [a[1], a[1]], [-2, a[2]], color=color, linewidth=2)
+    plot!(plt, [a[1], a[1]], [0, a[2]], color=color, linewidth=3)
     # upper vertical line
-    plot!(plt, [b[1], b[1]], [b[2], n+2], color=color, linewidth=2)
+    plot!(plt, [b[1], b[1]], [b[2], n+1], color=color, linewidth=3)
 end
 
 function plotLIP(a, b, m, n; color)
@@ -76,15 +85,12 @@ end
 
 
 function draw_arrow!(plt, point, direction)
-    # GR.setarrowsize(0.7)
-    # GR.setarrowstyle(2)
     scaling_factor = 0.5
     endpoint = point .+ (scaling_factor .* direction)
     plot!(plt,
         [point[1], endpoint[1]],
         [point[2], endpoint[2]],
         arrow=true,
-        arrowsize=0.1,
         color=:gray,
         linewidth=1,
         # label="",

@@ -17,12 +17,11 @@ end
 Generate all subsets of trades in Ω associated with agent i in appropriate order.
 """
 function all_sets(i, Ω)
-    trades = associated_trades(i, Ω) |> collect |> sort
-    pset = powerset(trades) |> collect |> reverse
-    return [Set(Φ) for Φ ∈ pset]
-    # incoming = incoming_trades(i, Ω)
-    # outgoing = outgoing_trades(i, Ω)
-    # return [intersect(incoming, Φ) ∪ setdiff(outgoing, Φ) for Φ ∈ powerset(trades)]
+    # Initially, work in buyer market, so assume that agent is buyer of all trades
+    all_trades = associated_trades(i, Ω) |> collect |> sort |> reverse
+    all_bundles = all_trades |> powerset |> collect |> reverse .|> Set
+    # now apply the τ function to translate to original market
+    return [τ(Φ, i, Ω) for Φ ∈ all_bundles]
 end
 
 
@@ -35,6 +34,25 @@ function generate_demand(i, Ω, valuation)
     return function demand(p)
         return argmax(Ψ->utility(p, Ψ), allsets)
     end
+end
+
+
+function indirect_utility(p, demand, utility)
+    Ψ = demand(p)
+    return utility(p, Ψ)
+end
+
+
+"""Convert trades to objects, and vice versa."""
+function τ(Φ, i, Ω)
+    # Define function that checks membership of ω in (Ωout \ Φ) ∪ (Ωin ∩ Φ)
+    function λ(ω)
+        isbuyer(i, ω, Ω) && ω ∈ Φ && return true
+        isseller(i, ω, Ω) && ω ∉ Φ && return true
+        return false
+    end
+
+    return Set(ω for ω in eachindex(Ω) if λ(ω) == true)
 end
 
 
@@ -163,4 +181,47 @@ function generate_two_trade_valuation(a::Vector{Int}, b::Vector{Int}, i, Ω)
         Ψ == Set([1,2]) && return y + z
         return 0
     end
+end
+
+# """
+# Generate Lyapunov function of the object-based market equivalent.
+# """
+# function generate_lyapunov_function(market)
+#     n, m, Ω = market.n, market.m, market.Ω
+#     utils = [
+#         (p, Φ) -> market.valuation[i](τ(Φ, i, Ω)) - sum(p[ω] for ω ∈ Φ; init=0) 
+#             for i ∈ 1:n
+#     ]
+#     all_bundles = [all_sets(i, Ω) for i ∈ 1:n]
+#     function L(offers)
+#         buyer_contribution = sum(
+#             maximum(Φ -> utils[i](neighbouring_offers(i, offers, market), Φ), all_bundles[i])
+#                 for i ∈ 1:n
+#         )
+#         linear_contribution = sum(offers[buyer(ω, Ω)][ω] for ω ∈ 1:m)
+#         return buyer_contribution + linear_contribution
+#     end
+#     return L
+# end
+
+
+"""
+Generate Lyapunov function of the object-based market equivalent.
+"""
+function generate_lyapunov_function(market)
+    n, m, Ω = market.n, market.m, market.Ω
+    utils = [
+        (p, Φ) -> market.valuation[i](τ(Φ, i, Ω)) - sum(p[ω] for ω ∈ Φ; init=0) 
+            for i ∈ 1:n
+    ]
+    all_bundles = [all_sets(i, Ω) for i ∈ 1:n]
+    function L(p)
+        buyer_contribution = sum(
+            maximum(Φ -> utils[i](p, Φ), all_bundles[i])
+                for i ∈ 1:n
+        )
+        seller_contribution = sum(p[ω] for ω ∈ 1:m)
+        return buyer_contribution + seller_contribution
+    end
+    return L
 end

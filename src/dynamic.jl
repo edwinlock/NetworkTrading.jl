@@ -10,22 +10,27 @@ Implement best response dynamic that selects an unsatisfied agent
 uniformly at random.
 """
 function dynamic(market)
-    data = (unsatisfied = Vector{Set{Int64}}(), offers = Vector{Vector{Dict{Int64, Int64}}}())
-    step = 1
+    data = (
+        unsatisfied = Vector{Set{Int64}}(),
+        offers = Vector{Vector{Dict{Int64, Int64}}}(),
+        selected = Vector{Int}()
+    )
+    steps = 0
     @debug "Running market with $(market.n) agents and $(market.m) trades."
      @debug "Initial offers are $(market.offers).\n"
     while length(market.unsatisfied) > 0
+        steps += 1
         i = rand(market.unsatisfied)  # choose unsatisfied agent uniformly at random
         best_response!(i, market)
+        push!(data.selected, i)
         push!(data.unsatisfied, copy(market.unsatisfied))
         push!(data.offers, copy(market.offers))
         @debug "Step $(step)"
         @debug "Selected agent $(i)"
         @debug "Number of unsatisfied agents is $(length(market.unsatisfied))."
         @debug "Current offers are $(market.offers).\n"
-        step += 1
     end
-    return step, data
+    return steps, data
 end
 
 

@@ -37,15 +37,22 @@ end
 ### Utilities
 
 """
+Determine seller or buyer of trade ω in list of trades Ω.
+"""
+seller(ω, Ω) = Ω[ω][1]
+buyer(ω, Ω) = Ω[ω][2]
+
+
+"""
 Determine whether agent i is seller/buyer of trade ω in list of trades Ω.
 """
-isseller(i, ω, Ω) = i == Ω[ω][1]
-isbuyer(i, ω, Ω) = i == Ω[ω][2]
+isseller(i, ω, Ω) = i == seller(ω, Ω)
+isbuyer(i, ω, Ω) = i == buyer(ω, Ω)
 
 
 """
-Define characteristic function that returns 1 if agent i is buyer in ω, -1
-if i is seller in ω, and 0 otherwise.
+Define characteristic function that returns 1 if agent i is buyer in ω,
+-1 if i is seller in ω, and 0 otherwise.
 """
 function χ(i, ω, Ω)
     isbuyer(i, ω, Ω) && return 1
@@ -96,22 +103,13 @@ neighbouring_offers(i::Int, market::Market) = neighbouring_offers(i, market.offe
 
 
 """
-Compute indirect utility of agent i at prices p in market.
-"""
-function indirect_utility(i, p, market::Market)
-    Ψ = market.demand[i](p)
-    return market.utility[i](p, Ψ)
-end
-
-
-"""
 Compute welfare (aggregate utility) of market with specified offers.
 """
 function welfare(offers, market::Market)
     welfare_sum = 0
     for i in 1:market.n
         p = neighbouring_offers(i, offers, market)
-        welfare_sum += indirect_utility(i, p, market)
+        welfare_sum += indirect_utility(p, market.demand[i], market.utility[i])
     end
     return welfare_sum
 end
@@ -158,7 +156,7 @@ function BipartiteUnitMarket(sellervals, buyervals, r)
         Dict(ω => rand(MINVAL:MAXVAL) for ω ∈ associated_trades(i, Ω))
         for i ∈ agents
     ]
-    return Market(Ω; offers=offers, valuation=valuation, demand=demand)
+    return Market(Ω, offers, valuation, demand)
 end
 
 
