@@ -37,13 +37,32 @@ function plot_welfare(market, data)
     plot(xs, ys, xlabel=xlabel, ylabel=ylabel, legend=false, lw=3, xticks=xs, yticks=ys, grid=false, mode="lines+markers")
 end
 
+
+"""Important: only works for two agents at the moment!"""
 function plot_lyapunov(market, data)
+    n = market.n
     xlabel, ylabel = "Step", "Lyapunov"
     numsteps = length(data.offers)
-    xs = 1:numsteps
+    xvals = [[s for s ∈ 1:numsteps if data.selected[s] == i] for i ∈ 1:n]
     L = generate_lyapunov_function(market)
-    ys = [L(data.offers[s][data.selected[s]]) for s in xs]
-    plot(xs, ys, xlabel=xlabel, ylabel=ylabel, legend=false, lw=3, xticks=xs, yticks=ys, grid=false, mode="lines+markers")
+    yvals = [[L(data.offers[s][i]) for s in xvals[i]] for i ∈ 1:n]
+    plt = plot()
+    for i ∈ 1:n
+        plot!(
+            plt,
+            xvals[i],
+            yvals[i],
+            xlabel=xlabel,
+            ylabel=ylabel,
+            legend=true,
+            lw=3,
+            xticks=xvals[i],
+            yticks=yvals[i],
+            grid=false,
+            marker=:circle
+        )
+    end
+    return plt
 end
 
 

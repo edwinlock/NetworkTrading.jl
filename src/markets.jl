@@ -200,7 +200,7 @@ function IntermediaryUnitMarket(sellervals, buyervals, numintermediaries::Int, r
         Dict(ω => rand(MINVAL:MAXVAL) for ω ∈ associated_trades(i, Ω))
         for i ∈ agents
     ]
-    return Market(Ω; offers=offers, valuation=valuation, demand=demand)
+    return Market(Ω, offers, valuation, demand)
 end
 
 function RandomIntermediaryUnitMarket(numsellers, numbuyers, numintermediaries, r)
