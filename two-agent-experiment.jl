@@ -100,7 +100,7 @@ m, n = 20, 20
 plt, market = create_random_market(m, n)
 steps, data = dynamic(market)
 plot_lyapunov(market, data)
-
+plt
 
 
 # a, b = generate_params(m, n)  # Vertices of LIP for agent 1

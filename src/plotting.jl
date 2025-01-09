@@ -38,7 +38,10 @@ function plot_welfare(market, data)
 end
 
 
-"""Important: only works for two agents at the moment!"""
+"""
+Plot the trajectory of the Lyapunov function for each agent using the agents'
+offers as prices.    
+"""
 function plot_lyapunov(market, data)
     n = market.n
     xlabel, ylabel = "Step", "Lyapunov"
@@ -54,7 +57,7 @@ function plot_lyapunov(market, data)
             yvals[i],
             xlabel=xlabel,
             ylabel=ylabel,
-            legend=true,
+            label="Agent $(i)",
             lw=3,
             xticks=xvals[i],
             yticks=yvals[i],

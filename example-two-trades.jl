@@ -1,15 +1,11 @@
 using Revise
 using NetworkTrading
 
-valmax = 100
+valmax = 20
 Ω = [(1,2), (1,2)]
 valuation = [
-    generate_random_two_trade_seller_valuation(valmax),
-    generate_random_two_trade_buyer_valuation(valmax)
-]
-demand = [
-    generate_two_trade_demand(1, Ω, valuation[1]),
-    generate_two_trade_demand(2, Ω, valuation[2]),
+    generate_random_two_trade_valuation(valmax, valmax, 1, Ω),
+    generate_random_two_trade_valuation(valmax, valmax, 2, Ω),
 ]
 offers = [
     Dict(1 => rand(0:valmax), 2 => rand(0:valmax)),

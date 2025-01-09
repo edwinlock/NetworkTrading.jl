@@ -183,26 +183,16 @@ function generate_two_trade_valuation(a::Vector{Int}, b::Vector{Int}, i, Ω)
     end
 end
 
-# """
-# Generate Lyapunov function of the object-based market equivalent.
-# """
-# function generate_lyapunov_function(market)
-#     n, m, Ω = market.n, market.m, market.Ω
-#     utils = [
-#         (p, Φ) -> market.valuation[i](τ(Φ, i, Ω)) - sum(p[ω] for ω ∈ Φ; init=0) 
-#             for i ∈ 1:n
-#     ]
-#     all_bundles = [all_sets(i, Ω) for i ∈ 1:n]
-#     function L(offers)
-#         buyer_contribution = sum(
-#             maximum(Φ -> utils[i](neighbouring_offers(i, offers, market), Φ), all_bundles[i])
-#                 for i ∈ 1:n
-#         )
-#         linear_contribution = sum(offers[buyer(ω, Ω)][ω] for ω ∈ 1:m)
-#         return buyer_contribution + linear_contribution
-#     end
-#     return L
-# end
+
+"""
+Generate random valuation function for two trades Ω for agent i.
+The LIP of the valuation will have vertices that lie in the box of
+width m and height n (with the lower left corner being the origin).
+"""
+function generate_random_two_trade_valuation(m::Int, n::Int, i, Ω)
+    a, b = generate_params(m, n)
+    return generate_two_trade_valuation(a, b, i, Ω)
+end
 
 
 """
