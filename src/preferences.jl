@@ -164,6 +164,7 @@ function generate_params(m, n)
     return a, b
 end
 
+
 """
 Generate valuation function for Ω = {1,2} from valuation points, a and b using χ vector.
 """
@@ -182,6 +183,7 @@ function generate_two_trade_valuation(a::Vector{Int}, b::Vector{Int}, i, Ω)
         return 0
     end
 end
+
 
 
 """
