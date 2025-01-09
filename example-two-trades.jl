@@ -11,9 +11,9 @@ offers = [
     Dict(1 => rand(0:valmax), 2 => rand(0:valmax)),
     Dict(1 => rand(0:valmax), 2 => rand(0:valmax))
 ]
-market = Market(Ω; valuation=valuation, demand=demand, offers=offers)
-# market.offers[1] = Dict(1 => 6); market.offers[2] = Dict(1 => 5, 2 => 6); market.offers[3] = Dict(2 => 6)
+market = Market(Ω, offers, valuation)
 steps, data = @time dynamic(market)
 plot_offers(market, data)
 plot_satisfied(market, data)
 plot_welfare(market, data)
+plot_lyapunov(market, data)
