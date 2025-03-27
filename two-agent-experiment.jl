@@ -79,6 +79,8 @@ transform(M) = transpose(M)[end:-1:1,:]
 
 m, n = 8, 8
 plt, market = create_random_market(m, n)
+plt
+
 coords = coordinates(m, n)
 dest = destinations(coords, market)
 
@@ -100,24 +102,4 @@ m, n = 20, 20
 plt, market = create_random_market(m, n)
 steps, data = dynamic(market)
 plot_lyapunov(market, data)
-plt
-
-
-# a, b = generate_params(m, n)  # Vertices of LIP for agent 1
-# c, d = generate_params(m, n)  # Vertices of LIP for agent 2
-# Ω = [(1,2), (1,2)]
-# valuation = [
-#     generate_two_trade_valuation(a, b, 1, Ω)
-#     generate_two_trade_valuation(c, d, 2, Ω)
-# ]
-# offers = [
-#     Dict(1 => rand(0:m), 2=>rand(0:n)),
-#     Dict(1 => rand(0:m), 2=>rand(0:n)),
-# ]
-# market = Market(Ω, offers, valuation)
-# plt = plotLIP(a, b, m, n; color=:blue)
-# plotLIP!(plt, c, d, m, n; color=:red)
-# coords = coordinates(m, n)
-# dirs = differences(coords, market)
-# annotate!(plt, coords, dirs)
 # plt

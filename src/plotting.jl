@@ -47,8 +47,10 @@ function plot_lyapunov(market, data)
     xlabel, ylabel = "Step", "Lyapunov"
     numsteps = length(data.offers)
     xvals = [[s for s ∈ 1:numsteps if data.selected[s] == i] for i ∈ 1:n]
+    xticks = 1:numsteps
     L = generate_lyapunov_function(market)
     yvals = [[L(data.offers[s][i]) for s in xvals[i]] for i ∈ 1:n]
+    yticks = 1:maximum(maximum.(yvals; init=0); init=0)
     plt = plot()
     for i ∈ 1:n
         plot!(
@@ -59,8 +61,41 @@ function plot_lyapunov(market, data)
             ylabel=ylabel,
             label="Agent $(i)",
             lw=3,
-            xticks=xvals[i],
-            yticks=yvals[i],
+            xticks=xticks,
+            yticks=yticks,
+            grid=false,
+            marker=:circle
+        )
+    end
+    return plt
+end
+
+
+"""
+Plot the trajectory of the Lyapunov function for each agent using the agents'
+offers as prices.    
+"""
+function plot_aggr_lyapunov(market, data)
+    n = market.n
+    xlabel, ylabel = "Step", "Lyapunov"
+    numsteps = length(data.offers)
+    xvals = [[s for s ∈ 1:numsteps if data.selected[s] == i] for i ∈ 1:n]
+    xticks = 1:numsteps
+    L = generate_lyapunov_function(market)
+    yvals = [[L(data.offers[s][i]) for s in xvals[i]] for i ∈ 1:n]
+    yticks = 1:maximum(maximum.(yvals; init=0); init=0)
+    plt = plot()
+    for i ∈ 1:n
+        plot!(
+            plt,
+            xvals[i],
+            yvals[i],
+            xlabel=xlabel,
+            ylabel=ylabel,
+            label="Agent $(i)",
+            lw=3,
+            xticks=xticks,
+            yticks=yticks,
             grid=false,
             marker=:circle
         )

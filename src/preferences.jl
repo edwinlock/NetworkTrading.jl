@@ -20,8 +20,10 @@ function all_sets(i, Ω)
     # Initially, work in buyer market, so assume that agent is buyer of all trades
     all_trades = associated_trades(i, Ω) |> collect |> sort |> reverse
     all_bundles = all_trades |> powerset |> collect |> reverse .|> Set
+    return all_bundles
+    # OLD: when I wanted to implement a version of free disposal
     # now apply the τ function to translate to original market
-    return [τ(Φ, i, Ω) for Φ ∈ all_bundles]
+    # return [τ(Φ, i, Ω) for Φ ∈ all_bundles]
 end
 
 
