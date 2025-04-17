@@ -41,7 +41,7 @@ I = [1,2,3]
 function w(C::Vector{Int})
     length(C) ≤ 1 && return 0
     C == [1,2] && return 0
-    C == [1,3] && return 5
+    C == [1,3] && return 6
     C == [2,3] && return 3
     C == [1,2,3] && return 8
     return nothing
