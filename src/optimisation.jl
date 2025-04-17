@@ -1,6 +1,7 @@
 using JuMP, Gurobi
 using Combinatorics
 
+
 function simple_test()
     model = Model(Gurobi.Optimizer)
     @variable(model, x)
