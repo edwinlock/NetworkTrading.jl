@@ -3,6 +3,18 @@ using Combinatorics
 
 const M = 10^8
 
+"""
+Return general valuation from dictionary of values of trades.
+"""
+function generate_valuation(i, Ω, v::Dict{Set{(Int,Int)}, Int})
+    trades = associated_trades(i, Ω)
+    @assert all(t in powerset(trades) for t in keys(v)) "Must provide value for each trade of agent i."
+    return function valuation(Ψ::Set{Int})::Int
+        Ψ ∈ keys(v) && return v[Ψ]
+        return -M
+    end
+end
+
 
 """
 Return utility function for general agents.

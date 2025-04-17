@@ -1,5 +1,6 @@
 using JuMP, Gurobi
 using Combinatorics
+using NetworkTrading
 
 
 function simple_test()
@@ -36,7 +37,6 @@ function min_variance(n, w)
     return value.(x)
 end
 
-
 # ad-hoc test of min-variance function:
 n = 3
 function w(C::Vector{Int})
@@ -48,7 +48,13 @@ function w(C::Vector{Int})
     return nothing
 end
 
-min_variance(I, w)
+# Create model instance
+I = [1, 2, 3]  # Set of indices i
+Ω = [(1,2), (2,3), (1,3)] # Set of elements ω
+v1 = [(1,2) => 2, (1,3) => 4]
+v2 = [{(1,2),(2,3)} => 10]
+v3 = [(1,3) => 8]
+valuation[1] = generate_valuation(1, Ω, v1)
 
 
 
