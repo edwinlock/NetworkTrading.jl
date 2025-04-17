@@ -17,24 +17,24 @@ end
 Generate all subsets of trades in Ω associated with agent i in appropriate order.
 """
 function all_sets(i, Ω)
-    # Initially, work in buyer market, so assume that agent is buyer of all trades
     all_trades = associated_trades(i, Ω) |> collect |> sort |> reverse
     all_bundles = all_trades |> powerset |> collect |> reverse .|> Set
     return all_bundles
-    # OLD: when I wanted to implement a version of free disposal
-    # now apply the τ function to translate to original market
-    # return [τ(Φ, i, Ω) for Φ ∈ all_bundles]
 end
 
 
 """
 Return demand function for general agents. Breaks ties using leximin rule.
+
+Restrict the domain for improved efficiency.
+
+NB: Demand function returns the inclusion-wise minimal bundle demanded!
+
 """
-function generate_demand(i, Ω, valuation)
+function generate_demand(i, Ω, valuation; domain=all_sets(i, Ω))
     utility = generate_utility(i, Ω, valuation)
-    allsets = all_sets(i, Ω)
     return function demand(p)
-        return argmax(Ψ->utility(p, Ψ), allsets)
+        return argmax(Ψ->utility(p, Ψ), domain)
     end
 end
 
@@ -45,18 +45,7 @@ function indirect_utility(p, demand, utility)
 end
 
 
-"""Convert trades to objects, and vice versa."""
-function τ(Φ, i, Ω)
-    # Define function that checks membership of ω in (Ωout \ Φ) ∪ (Ωin ∩ Φ)
-    function λ(ω)
-        isbuyer(i, ω, Ω) && ω ∈ Φ && return true
-        isseller(i, ω, Ω) && ω ∉ Φ && return true
-        return false
-    end
-
-    return Set(ω for ω in eachindex(Ω) if λ(ω) == true)
-end
-
+### Specialised implementations for unit demand/supply and intermediaries
 
 """
 Return valuation function for unit demand bidder.
@@ -81,25 +70,10 @@ end
 """
 Return demand function for unit demand agent (can be buyer, seller, or both)
 at prices p.
-
-NB: Demand function returns the inclusion-wise minimal bundle demanded!
 """
 function generate_unit_demand(i, Ω, valuation)
-    i, Ω = i, Ω
-    trades = associated_trades(i, Ω)
-    util = generate_utility(i, Ω, valuation)
-    return function unit_demand(p::Dict{Int, Int})
-        max_utility = 0
-        Ψ = Set{Int}()
-        for ω ∈ intersect(keys(p), trades)
-            u = util(p, Set(ω))
-            if u > max_utility
-                max_utility = u
-                Ψ = Set(ω)
-            end
-        end
-        return Ψ
-    end
+    domain = [Set(ω) for ω ∈ associated_trades(i, Ω)]
+    return generate_demand(i, Ω, valuation, domain=domain)
 end
 
 
@@ -107,7 +81,6 @@ end
 Return valuation function for intermediary.
 """
 function generate_intermediary_valuation(i, Ω)
-    i, Ω = i, Ω
     return function intermediary_valuation(Ψ)
         # Count number of incoming and outgoing trades.
         # If number is the same, return 0, otherwise -M.
@@ -121,7 +94,6 @@ end
 Compute bundle Ψ demanded by intermediary i at prices p in market.
 """
 function generate_intermediary_demand(i, Ω)
-    i, Ω = i, Ω
     incoming_unsorted = collect(incoming_trades(i, Ω))
     outgoing_unsorted = collect(outgoing_trades(i, Ω))
     return function intermediary_demand(p::Dict{Int, Int})
@@ -218,4 +190,18 @@ function generate_lyapunov_function(market)
         return buyer_contribution + seller_contribution
     end
     return L
+end
+
+
+
+"""Convert trades to objects, and vice versa."""
+function τ(Φ, i, Ω)
+    # Define function that checks membership of ω in (Ωout \ Φ) ∪ (Ωin ∩ Φ)
+    function λ(ω)
+        isbuyer(i, ω, Ω) && ω ∈ Φ && return true
+        isseller(i, ω, Ω) && ω ∉ Φ && return true
+        return false
+    end
+
+    return Set(ω for ω in eachindex(Ω) if λ(ω) == true)
 end
