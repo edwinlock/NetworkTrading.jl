@@ -1,40 +1,31 @@
+using Revise
 using JuMP, Gurobi
 using Combinatorics
-using Revise
-using DataStructures
 
 
 function generate_welfare_fn(market)
-    n, m = market.n, market.m
-    Ω = market.Ω
-    d = DefaultDict{Set{Int}, Int}(0)
+    n, m, Ω = market.n, market.m, market.Ω
+    all_coalitions = Set.(powerset(1:n))
+    all_bundles = Set.(powerset(1:m))
+    d = Dict(C => 0 for C ∈ all_coalitions)
     # Compute the aggregate valuation for each subset of trades.
-    for Φ ∈ 1:m
+    for Φ ∈ all_bundles
         C = associated_agents(Φ, Ω)
-        d[C] = sum(market.valuation[i](Φ) for i ∈ C)
+        d[C] = sum(market.valuation[i](Φ) for i ∈ C; init=0)
     end
     # Percolate the maximum values downwards in the lattice.
-    for C ∈ powerset(1:n, 1)
-        d[C] = max(d[C], maximum(d[setdiff(C, ω)] for ω ∈ C))
+    for C ∈ all_coalitions
+        d[C] = max(d[C], maximum(d[setdiff(C, ω)] for ω ∈ C; init=0))
     end
     # Create a function that takes a vector of agents and returns the welfare
     # for that coalition.
     function welfare(C::Vector{Int})
         @assert C ⊆ 1:n "C must be a subset of agents 1 to n."
-        return d[C]
+        return d[Set(C)]
     end
     return welfare
 end
 
-
-function simple_test()
-    model = Model(Gurobi.Optimizer)
-    @variable(model, x)
-    @constraint(model, x ≤ 1)
-    @objective(model, Max, x)
-    optimize!(model)
-    return value(x)
-end
 
 
 """
@@ -54,7 +45,7 @@ Note: assumes that w(C) is defined for each C ⊆ 1:n!
 """
 function minvar_model(n::Int, w)
     grand_coalition = collect(1:n)
-    proper_subsets = collect(powerset(1:n, 1, n-1))
+    proper_subsets = collect.(powerset(1:n, 1, n-1))
     model = Model(Gurobi.Optimizer)
     @variable(model, x[1:n])
     @constraint(model, eq, sum(x) == w(grand_coalition))
@@ -90,7 +81,7 @@ function leximin_model(n, w)
     M = 500
 
     grand_coalition = collect(1:n)
-    proper_subsets = collect(powerset(1:n, 1, n-1))
+    proper_subsets = collect.(powerset(1:n, 1, n-1))
     model = Model(Gurobi.Optimizer)
     
     ## Define variables
@@ -169,7 +160,7 @@ end
 
 ########### ad-hoc test of min-variance function:
 n = 3
-function w(C::Vector{Int})
+function w(C::Set{Int})
     length(C) ≤ 1 && return 0
     C == [1,2] && return 0
     C == [1,3] && return 6

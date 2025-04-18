@@ -79,7 +79,7 @@ outgoing_trades(i, Ω) = Set(ω for ω ∈ 1:length(Ω) if isseller(i, ω, Ω))
 """
 Compute all agents involved in trades Φ of Ω.
 """
-function associated_agents(Φ::Vector{Int}, Ω)
+function associated_agents(Φ::Set{Int}, Ω)
     agents = Set{Int}()
     for ω ∈ Φ
         push!(agents, seller(ω, Ω))

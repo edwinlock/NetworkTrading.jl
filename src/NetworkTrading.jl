@@ -6,7 +6,7 @@ include("preferences.jl")
 include("plotting.jl")
 
 
-export Market, seller, buyer, isseller, isbuyer, associated_trades, incoming_trades, outgoing_trades, χ, counterpart
+export Market, seller, buyer, isseller, isbuyer, associated_trades, incoming_trades, outgoing_trades, χ, counterpart, associated_agents
 export BipartiteUnitMarket, RandomBipartiteUnitMarket, IntermediaryUnitMarket, RandomIntermediaryUnitMarket
 
 export neighbouring_offers, active, welfare, updated_offers, best_response!, dynamic, indirect_utility
