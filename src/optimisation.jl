@@ -7,7 +7,7 @@ using DataStructures
 function generate_welfare_fn(market)
     n, m = market.n, market.m
     Ω = market.Ω
-    d = Dict{Set{Int}, Int}(0)
+    d = DefaultDict{Set{Int}, Int}(0)
     # Compute the aggregate valuation for each subset of trades.
     for Φ ∈ 1:m
         C = associated_agents(Φ, Ω)
@@ -17,7 +17,6 @@ function generate_welfare_fn(market)
     for C ∈ powerset(1:n, 1)
         d[C] = max(d[C], maximum(d[setdiff(C, ω)] for ω ∈ C))
     end
-
     # Create a function that takes a vector of agents and returns the welfare
     # for that coalition.
     function welfare(C::Vector{Int})
