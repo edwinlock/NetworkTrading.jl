@@ -27,7 +27,6 @@ function generate_welfare_fn(market)
 end
 
 
-
 """
 Create model to find a minimum variance core imputation
 of the cooperative market game defined by agents 1 to `n` and
@@ -152,7 +151,7 @@ function find_optimal_core_imputation(n::Int, w, objective::Symbol)
     model, x = model_fn(n, w)
     # Solve model and return result
     optimize!(model)
-    @info "Optimal core imputation: $(value.(x))"
+    @info "$(objective) core imputation: $(value.(x))"
     return value.(x)
 end
 
@@ -160,7 +159,7 @@ end
 
 ########### ad-hoc test of min-variance function:
 n = 3
-function w(C::Set{Int})
+function w(C::Vector{Int})
     length(C) ≤ 1 && return 0
     C == [1,2] && return 0
     C == [1,3] && return 6
