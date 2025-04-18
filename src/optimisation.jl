@@ -1,6 +1,32 @@
 using JuMP, Gurobi
 using Combinatorics
 using Revise
+using DataStructures
+
+
+function generate_welfare_fn(market)
+    n, m = market.n, market.m
+    Ω = market.Ω
+    d = Dict{Set{Int}, Int}(0)
+    # Compute the aggregate valuation for each subset of trades.
+    for Φ ∈ 1:m
+        C = associated_agents(Φ, Ω)
+        d[C] = sum(market.valuation[i](Φ) for i ∈ C)
+    end
+    # Percolate the maximum values downwards in the lattice.
+    for C ∈ powerset(1:n, 1)
+        d[C] = max(d[C], maximum(d[setdiff(C, ω)] for ω ∈ C))
+    end
+
+    # Create a function that takes a vector of agents and returns the welfare
+    # for that coalition.
+    function welfare(C::Vector{Int})
+        @assert C ⊆ 1:n "C must be a subset of agents 1 to n."
+        return d[C]
+    end
+    return welfare
+end
+
 
 function simple_test()
     model = Model(Gurobi.Optimizer)
