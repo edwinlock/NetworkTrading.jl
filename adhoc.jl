@@ -18,9 +18,9 @@ valuation = [
     generate_valuation(3, Ω, v3)
 ]
 demand = [
-    generate_unit_demand(1, Ω, valuation[1]),
-    generate_intermediary_demand(1, Ω),
-    generate_unit_demand(3, Ω, valuation[3]),
+    generate_demand(1, Ω, valuation[1]),
+    generate_demand(2, Ω, valuation[2]),
+    generate_demand(3, Ω, valuation[3]),
 ]
 offers = [
     Dict(1 => 9),
