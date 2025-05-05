@@ -1,7 +1,7 @@
 using Revise
 using NetworkTrading
 
-ENV["JULIA_DEBUG"] = "all"
+#ENV["JULIA_DEBUG"] = "all"
 
 ### Test with 3-agent network
 # Agent 1 is seller

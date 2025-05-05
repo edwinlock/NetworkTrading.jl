@@ -8,7 +8,7 @@ Return general valuation from dictionary of values of trades.
 """
 function generate_valuation(i, Ω, v::Dict{Set{Int}, Int})
     trades = associated_trades(i, Ω)
-    @assert all(t in powerset(trades) for t in keys(v)) "Must provide value for each trade of agent i."
+    @assert all(t in (collect(powerset(collect(trades))) .|> Set) for t in keys(v)) "Keys must be valid bundles of agent $i"
     return function valuation(Ψ::Set{Int})::Int
         Ψ ∈ keys(v) && return v[Ψ]
         return -M
