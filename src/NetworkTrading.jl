@@ -15,6 +15,7 @@ export objects2trades, generate_lyapunov_function, τ
 export generate_two_trade_valuation, generate_params, all_sets
 export plot_offers, plot_satisfied, plot_welfare, plot_lyapunov
 export plotLIP, plotLIP!, draw_arrow!
+export generate_valuation
 
 using PrecompileTools
 @compile_workload begin
