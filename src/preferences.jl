@@ -84,7 +84,7 @@ Return demand function for unit demand agent (can be buyer, seller, or both)
 at prices p.
 """
 function generate_unit_demand(i, Ω, valuation)
-    domain = [Set(ω) for ω ∈ associated_trades(i, Ω)]
+    domain = [Set(ω) for ω ∈ associated_trades(i, Ω)] ∪ [Set(Int[])]
     return generate_demand(i, Ω, valuation, domain=domain)
 end
 
