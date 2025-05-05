@@ -22,7 +22,7 @@ offers = [
     Dict(1 => 21, 2=>16),
     Dict(2 => 1)
 ]
-market = Market(Ω; valuation=valuation, demand=demand, offers=offers)
+market = Market(Ω, offers, valuation, demand)
 # market.offers[1] = Dict(1 => 6); market.offers[2] = Dict(1 => 5, 2 => 6); market.offers[3] = Dict(2 => 6)
 steps, data = @time dynamic(market)
 plot_offers(market, data)
