@@ -23,11 +23,13 @@ demand = [
     generate_demand(3, Ω, valuation[3]),
 ]
 offers = [
-    Dict(1 => 9),
     Dict(1 => 21, 2=>16),
-    Dict(2 => 1)
+    Dict(1 => 9, 3=>14),
+    Dict(2 => 21, 3=>16)
 ]
 market = Market(Ω, offers, valuation, demand)
+
+@time steps, data = dynamic(market, offers)
 
 ### Test with 3-agent path network
 # Agent 1 is seller
@@ -51,8 +53,8 @@ offers = [
     Dict(2 => 1)
 ]
 market = Market(Ω, offers, valuation, demand)
-# market.offers[1] = Dict(1 => 6); market.offers[2] = Dict(1 => 5, 2 => 6); market.offers[3] = Dict(2 => 6)
-# steps, data = @time dynamic(market)
+# offers[1] = Dict(1 => 6); offers[2] = Dict(1 => 5, 2 => 6); offers[3] = Dict(2 => 6)
+steps, data = @time dynamic(market, offers)
 # plot_offers(market, data)
 # plot_satisfied(market, data)
 # plot_welfare(market, data)

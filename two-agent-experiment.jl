@@ -12,15 +12,15 @@ using Plots
 #     return [χ(i, ω, Ω) * ω * ε / m for ω ∈ 1:m]
 # end
 
-function twoBRs(market, p)
+function twoBRs(market, offers, p)
     # Step 1: offers of agent 2 are set to p
-    market.offers[2] = Dict(1 => p[1], 2 => p[2])
+    offers[2] = Dict(1 => p[1], 2 => p[2])
     # Step 2: agent 1 best responds
     best_response!(1, market)
     # Step 3: agent 2 best responds
     best_response!(2, market)
     # Step 4: extract offers of agent 2 as prices q
-    q = [market.offers[2][1], market.offers[2][2]]
+    q = [offers[2][1], offers[2][2]]
     return q
 end
 

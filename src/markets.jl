@@ -102,7 +102,7 @@ end
 """
 Retrieve the offers of agent i's neighbours.
 """
-function neighbouring_offers(i::Int, offers, market::Market)::Dict{Int,Int}
+function neighbouring_offers(i::Int, market::Market, offers)::Dict{Int,Int}
     prices = Dict{Int,Int}()
     for ω ∈ market.trades[i]  # Set prices[ω] to the offer of counterpart of trade    
         j = counterpart(i, ω, market.Ω)
@@ -110,13 +110,13 @@ function neighbouring_offers(i::Int, offers, market::Market)::Dict{Int,Int}
     end
     return prices
 end
-neighbouring_offers(i::Int, market::Market) = neighbouring_offers(i, market.offers, market)
+neighbouring_offers(i::Int, market::Market) = neighbouring_offers(i, offers, market)
 
 
 """
 Compute welfare (aggregate utility) of market with specified offers.
 """
-function welfare(offers, market::Market)
+function welfare(market::Market, offers)
     welfare_sum = 0
     for i in 1:market.n
         p = neighbouring_offers(i, offers, market)
@@ -124,7 +124,7 @@ function welfare(offers, market::Market)
     end
     return welfare_sum
 end
-welfare(market::Market) = welfare(market.offers, market)
+welfare(market::Market) = welfare(market, offers)
 
 
 """

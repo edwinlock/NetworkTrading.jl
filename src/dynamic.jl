@@ -9,7 +9,7 @@ using ProgressMeter
 Implement best response dynamic that selects an unsatisfied agent
 uniformly at random.
 """
-function dynamic(market)
+function dynamic(market, offers)
     data = (
         unsatisfied = Vector{Set{Int64}}(),
         offers = Vector{Vector{Dict{Int64, Int64}}}(),
@@ -17,18 +17,18 @@ function dynamic(market)
     )
     steps = 0
     @debug "Running market with $(market.n) agents and $(market.m) trades."
-    @debug "Initial offers are $(market.offers).\n"
+    @debug "Initial offers are $(offers).\n"
     while length(market.unsatisfied) > 0
         steps += 1
         i = rand(market.unsatisfied)  # choose unsatisfied agent uniformly at random
-        best_response!(i, market)
+        best_response!(i, market, offers)
         push!(data.selected, i)
         push!(data.unsatisfied, copy(market.unsatisfied))
-        push!(data.offers, copy(market.offers))
-        @debug "Step $(step)"
+        push!(data.offers, copy(offers))
+        @debug "Step $(steps)"
         @debug "Selected agent $(i)"
         @debug "Number of unsatisfied agents is $(length(market.unsatisfied))."
-        @debug "Current offers are $(market.offers).\n"
+        @debug "Current offers are $(offers).\n"
     end
     return steps, data
 end
@@ -38,15 +38,15 @@ end
 Perform best response for agent i. Updates offers of the agent and
 the set of unsatisfied neighbours of the market.
 """
-function best_response!(i, market::Market)
-    p = neighbouring_offers(i, market)
+function best_response!(i, market::Market, offers)
+    p = neighbouring_offers(i, market, offers)
     Ψ = market.demand[i](p)
     newoffers = updated_offers(i, p, Ψ, market)
     newly_unsatisfied = Set(
         counterpart(i, ω, market.Ω) for ω ∈ market.trades[i]
-            if market.offers[i][ω] ≠ newoffers[ω]
+            if offers[i][ω] ≠ newoffers[ω]
     )
-    market.offers[i] = newoffers
+    offers[i] = newoffers
     union!(market.unsatisfied, newly_unsatisfied)
     delete!(market.unsatisfied, i)  # agent i is now satisfied
     return nothing

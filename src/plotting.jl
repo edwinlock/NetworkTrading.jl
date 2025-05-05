@@ -32,7 +32,7 @@ function plot_welfare(market, data)
     xlabel, ylabel = "Steps", "Welfare"
     numsteps = length(data.offers)
     xs = 1:numsteps
-    ys = [welfare(data.offers[s], market) for s ∈ xs]
+    ys = [welfare(market, data.offers[s]) for s ∈ xs]
     # plot(xs, ys, xlabel=xlabel, ylabel=ylabel, legend=false, mode="lines+markers")
     plot(xs, ys, xlabel=xlabel, ylabel=ylabel, legend=false, lw=3, xticks=xs, yticks=ys, grid=false, mode="lines+markers")
 end
