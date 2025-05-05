@@ -76,6 +76,17 @@ Compute outgoing trades in Ω that are associated with agent i.
 """
 outgoing_trades(i, Ω) = Set(ω for ω ∈ 1:length(Ω) if isseller(i, ω, Ω))
 
+"""
+Compute all agents involved in trades Φ of Ω.
+"""
+function associated_agents(Φ::Set{Int}, Ω)
+    agents = Set{Int}()
+    for ω ∈ Φ
+        push!(agents, seller(ω, Ω))
+        push!(agents, buyer(ω, Ω))
+    end
+    return agents
+end
 
 """
 Compute counterpart of agent i for trade ω in list of trades Ω.
