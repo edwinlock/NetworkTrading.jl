@@ -1,6 +1,7 @@
 using JuMP, Gurobi
 using Combinatorics
 using NetworkTrading
+using NetworkTrading
 
 
 function simple_test()
