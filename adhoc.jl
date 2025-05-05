@@ -1,6 +1,8 @@
 using Revise
 using NetworkTrading
 
+ENV["JULIA_DEBUG"] = "all"
+
 ### Test with 3-agent path network
 # Agent 1 is seller
 # Agent 2 is intermediary
@@ -29,36 +31,36 @@ plot_offers(market, data)
 plot_satisfied(market, data)
 plot_welfare(market, data)
 
-### Test with one seller (1) and three buyers (2,3,4)
-Ω = [(1,2), (1,3), (1,4)]
-valuation = [
-    generate_unit_valuation(1, Ω, 0),
-    generate_unit_valuation(2, Ω, 2),
-    generate_unit_valuation(3, Ω, 2),
-    generate_unit_valuation(4, Ω, 2),
-]
-demand = [
-    generate_unit_demand(1, Ω, valuation[1]),
-    generate_unit_demand(2, Ω, valuation[2]),
-    generate_unit_demand(3, Ω, valuation[3]),
-    generate_unit_demand(4, Ω, valuation[4]),
-]
-offers = [
-    Dict(1 => 1, 2 => 1, 3 => 1),
-    Dict(1 => 1),
-    Dict(2 => 1),
-    Dict(3 => 1),
-]
-market = Market(Ω, offers, valuation, demand)
-steps, data = @time dynamic(market)
-plot_offers(market, data)
-plot_satisfied(market, data)
-plot_welfare(market, data)
-
-
-### Test with bipartite network
-market = RandomBipartiteUnitMarket(10,10,0.25);
-steps, data = @time dynamic(market);
+# ### Test with one seller (1) and three buyers (2,3,4)
+# Ω = [(1,2), (1,3), (1,4)]
+# valuation = [
+#     generate_unit_valuation(1, Ω, 0),
+#     generate_unit_valuation(2, Ω, 2),
+#     generate_unit_valuation(3, Ω, 2),
+#     generate_unit_valuation(4, Ω, 2),
+# ]
+# demand = [
+#     generate_unit_demand(1, Ω, valuation[1]),
+#     generate_unit_demand(2, Ω, valuation[2]),
+#     generate_unit_demand(3, Ω, valuation[3]),
+#     generate_unit_demand(4, Ω, valuation[4]),
+# ]
+# offers = [
+#     Dict(1 => 1, 2 => 1, 3 => 1),
+#     Dict(1 => 1),
+#     Dict(2 => 1),
+#     Dict(3 => 1),
+# ]
+# market = Market(Ω, offers, valuation, demand)
+# steps, data = @time dynamic(market)
 # plot_offers(market, data)
-plot_satisfied(market, data)
-plot_welfare(market, data)
+# plot_satisfied(market, data)
+# plot_welfare(market, data)
+
+
+# ### Test with bipartite network
+# market = RandomBipartiteUnitMarket(10,10,0.25);
+# steps, data = @time dynamic(market);
+# # plot_offers(market, data)
+# plot_satisfied(market, data)
+# plot_welfare(market, data)

@@ -17,7 +17,7 @@ function dynamic(market)
     )
     steps = 0
     @debug "Running market with $(market.n) agents and $(market.m) trades."
-     @debug "Initial offers are $(market.offers).\n"
+    @debug "Initial offers are $(market.offers).\n"
     while length(market.unsatisfied) > 0
         steps += 1
         i = rand(market.unsatisfied)  # choose unsatisfied agent uniformly at random
