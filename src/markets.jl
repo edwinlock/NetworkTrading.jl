@@ -69,9 +69,10 @@ end
 
 
 """
-Compute all trades in Ω that are associated with agent i.
+Compute all trades in Φ (defaults to all trades, 1:length(Ω)) of Ω associated with agent i.
 """
-associated_trades(i, Ω) = Set(ω for ω ∈ 1:length(Ω) if i ∈ Ω[ω])
+associated_trades(i, Φ, Ω) = Set(ω for ω ∈ Φ if i ∈ Ω[ω])
+associated_trades(i, Ω) = associated_trades(i, 1:length(Ω), Ω)
 
 """
 Compute incoming trades in Ω that are associated with agent i.

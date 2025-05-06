@@ -13,6 +13,7 @@ function generate_welfare_fn(market)
         C = associated_agents(Φ, Ω)
         welfare = sum(market.valuation[i](Φ) for i ∈ C; init=0)
         d[C] = max(d[C], welfare)
+        println("Φ: $Φ, C: $C, welfare: $welfare")
     end
     println(d)
     # Percolate the maximum values upwards in the lattice of coalitions.
