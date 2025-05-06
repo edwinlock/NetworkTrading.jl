@@ -9,7 +9,7 @@ using ProgressMeter
 Implement best response dynamic that selects an unsatisfied agent
 uniformly at random.
 """
-function dynamic(market, offers)
+function dynamic(market, offers::Vector{Dict{Int,Int}})
     data = (
         unsatisfied = Vector{Set{Int64}}(),
         offers = Vector{Vector{Dict{Int64, Int64}}}(),

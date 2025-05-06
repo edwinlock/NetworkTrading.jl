@@ -3,7 +3,6 @@ struct Market
     m::Int  # number of trades
     Ω::Vector{Tuple{Int,Int}}  # list of trades given as ordered pairs (seller, buyer)
     trades::Vector{Set{Int}}  # set of trades for each agent
-    offers::Vector{Dict{Int,Int}}  # for each agent, a dict mapping trades to offers
     unsatisfied::Set{Int}  # set of unsatisfied agents in the market
     valuation::Vector{Function}  # for each agent, a valuation function
     utility::Vector{Function}  # for each agent, a utility function
@@ -11,7 +10,7 @@ struct Market
 end
 
 # Outer constructors
-function Market(Ω::Vector{Tuple{Int,Int}}, offers, valuation, demand)
+function Market(Ω::Vector{Tuple{Int,Int}}, valuation, demand)
     m = length(Ω)  # number of trades
     n = length(valuation)  # number of agents
 
@@ -24,13 +23,13 @@ function Market(Ω::Vector{Tuple{Int,Int}}, offers, valuation, demand)
     trades_per_agent = [associated_trades(i, Ω) for i ∈ 1:n]
     unsatisfied = Set(1:n)
     utility = [generate_utility(i, Ω, valuation[i]) for i ∈ 1:n]
-    return Market(n, m, Ω, trades_per_agent, offers, unsatisfied, valuation, utility, demand)
+    return Market(n, m, Ω, trades_per_agent, unsatisfied, valuation, utility, demand)
 end
 
 function Market(Ω::Vector{Tuple{Int,Int}}, offers, valuation)
     n = length(valuation)
     demand = [generate_demand(i, Ω, valuation[i]) for i ∈ 1:n]
-    return Market(Ω, offers, valuation, demand)
+    return Market(Ω, valuation, demand)
 end
 
 
