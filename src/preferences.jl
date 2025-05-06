@@ -65,11 +65,14 @@ Return valuation function for unit demand bidder.
 function generate_unit_valuation(i, Ω, values::Dict{Int, Int})
     trades = associated_trades(i, Ω)
     @assert trades == keys(values) "Must provide value for each trade of agent i."
-    return function unit_valuation(Ψ::Set{Int})::Int
-        Φ = Ψ ∩ trades
+    return function unit_valuation(Φ::Set{Int})::Int
+        # First deal with the bundles of size ≠ 1
         length(Φ) == 0 && return 0
-        length(Φ) == 1 && return values[first(Φ)]
-        return -M
+        length(Φ) ≥ 2 && return -M
+        # Now deal with singleton bundles {ω}
+        ω = first(Φ)
+        ω ∈ trades && return values[ω]  # if ω is contained in 
+        return -M  # 
     end
 end
 function generate_unit_valuation(i, Ω, val::Int)
@@ -94,6 +97,9 @@ Return valuation function for intermediary.
 """
 function generate_intermediary_valuation(i, Ω)
     return function intermediary_valuation(Ψ)
+        # If Ψ isn't a subset of agent's associated trades, return -M
+        !(Ψ ⊆ associated_trades(i, Ω)) && return -M
+        # Now we can assume that Ψ only contains associated trades of i
         # Count number of incoming and outgoing trades.
         # If number is the same, return 0, otherwise -M.
         sum(χ(i, ω, Ω) for ω ∈ Ψ; init=0) == 0 && return 0
