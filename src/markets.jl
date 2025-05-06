@@ -75,6 +75,11 @@ associated_trades(i, Φ, Ω) = Set(ω for ω ∈ Φ if i ∈ Ω[ω])
 associated_trades(i, Ω) = associated_trades(i, 1:length(Ω), Ω)
 
 """
+Compute all trades in a given bundle Φ that are associated with agent i.
+"""
+associated_trades(i, Φ, Ω) = Set(ω for ω ∈ Φ if i ∈ Ω[ω])
+
+"""
 Compute incoming trades in Ω that are associated with agent i.
 """
 incoming_trades(i, Ω) = Set(ω for ω ∈ 1:length(Ω) if isbuyer(i, ω, Ω))
