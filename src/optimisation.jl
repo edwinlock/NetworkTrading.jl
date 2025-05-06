@@ -1,22 +1,25 @@
-using Revise
 using JuMP, Gurobi
 using Combinatorics
 
 function generate_welfare_fn(market)
     n, m, Ω = market.n, market.m, market.Ω
     all_coalitions = Set.(powerset(1:n))
+    nontrivial_coalitions = Set.(powerset(1:n, 3))
     all_bundles = Set.(powerset(1:m))
     d = Dict(C => 0 for C ∈ all_coalitions)
+    println(all_bundles)
     # Compute the aggregate valuation for each subset of trades.
     for Φ ∈ all_bundles
         C = associated_agents(Φ, Ω)
         welfare = sum(market.valuation[i](Φ) for i ∈ C; init=0)
         d[C] = max(d[C], welfare)
     end
-    # Percolate the maximum values downwards in the lattice.
-    for C ∈ all_coalitions
+    println(d)
+    # Percolate the maximum values upwards in the lattice of coalitions.
+    for C ∈ nontrivial_coalitions
         d[C] = max(d[C], maximum(d[setdiff(C, ω)] for ω ∈ C; init=0))
     end
+    println(d)
     # Create a function that takes a vector of agents and returns the welfare
     # for that coalition.
     function welfare(C::Vector{Int})
