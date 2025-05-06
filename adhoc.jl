@@ -28,9 +28,11 @@ offers = [
     Dict(2 => 21, 3=>16)
 ]
 market = Market(Ω, valuation, demand)
-ds = DynamicState(market, offers)
+welfare = generate_welfare_fn(market)
 
-@time steps, data = dynamic(market, ds)
+
+#ds = DynamicState(market, offers)
+#@time steps, data = dynamic(market, ds)
 
 ### Test with 3-agent path network
 # Agent 1 is seller

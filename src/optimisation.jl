@@ -10,7 +10,8 @@ function generate_welfare_fn(market)
     # Compute the aggregate valuation for each subset of trades.
     for Φ ∈ all_bundles
         C = associated_agents(Φ, Ω)
-        d[C] = sum(market.valuation[i](Φ) for i ∈ C; init=0)
+        welfare = sum(market.valuation[i](Φ) for i ∈ C; init=0)
+        d[C] = max(d[C], welfare)
     end
     # Percolate the maximum values downwards in the lattice.
     for C ∈ all_coalitions
