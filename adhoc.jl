@@ -28,8 +28,9 @@ offers = [
     Dict(2 => 21, 3=>16)
 ]
 market = Market(Ω, valuation, demand)
+ds = DynamicState(market, offers)
 
-@time steps, data = dynamic(market, offers)
+@time steps, data = dynamic(market, ds)
 
 ### Test with 3-agent path network
 # Agent 1 is seller
@@ -53,8 +54,9 @@ offers = [
     Dict(2 => 1)
 ]
 market = Market(Ω, valuation, demand)
+ds = DynamicState(market, offers)
 # offers[1] = Dict(1 => 6); offers[2] = Dict(1 => 5, 2 => 6); offers[3] = Dict(2 => 6)
-steps, data = @time dynamic(market, offers)
+steps, data = @time dynamic(market, ds)
 # plot_offers(market, data)
 # plot_satisfied(market, data)
 # plot_welfare(market, data)
