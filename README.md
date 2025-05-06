@@ -20,8 +20,9 @@ offers = [
     Dict(1 => 21, 2=>16),
     Dict(2 => 1)
 ]
-market = Market(Ω, offers, valuation)
-steps, data = @time dynamic(market)
+market = Market(Ω, valuation)
+ds = DynamicState(market, offers)
+steps, data = @time dynamic(market, ds)
 plot_offers(market, data)
 plot_satisfied(market, data)
 plot_welfare(market, data)
