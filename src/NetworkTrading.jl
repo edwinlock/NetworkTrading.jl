@@ -30,8 +30,9 @@ using PrecompileTools
     Dict(1 => rand(0:valmax), 2 => rand(0:valmax)),
     Dict(1 => rand(0:valmax), 2 => rand(0:valmax))
     ]
-    market = Market(Ω, offers, valuation)
-    steps, data = @time dynamic(market)
+    market = Market(Ω, valuation)
+    ds = DynamicState(market, offers)
+    steps, data = @time dynamic(market, ds)
     # plot_offers(market, data)
     # plot_satisfied(market, data)
     # plot_welfare(market, data)
