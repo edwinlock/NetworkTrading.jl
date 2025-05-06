@@ -7,19 +7,20 @@ function generate_welfare_fn(market)
     nontrivial_coalitions = Set.(powerset(1:n, 3))
     all_bundles = Set.(powerset(1:m))
     d = Dict(C => 0 for C ∈ all_coalitions)
-    println(all_bundles)
     # Compute the aggregate valuation for each subset of trades.
     for Φ ∈ all_bundles
         C = associated_agents(Φ, Ω)
-        welfare = sum(market.valuation[i](Φ) for i ∈ C; init=0)
+        welfare = 0
+        for i ∈ C
+            Φ_i = associated_trades(i, Φ, Ω)
+            welfare += market.valuation[i](Φ_i)
+        end
         d[C] = max(d[C], welfare)
     end
-    println(d)
     # Percolate the maximum values upwards in the lattice of coalitions.
     for C ∈ nontrivial_coalitions
         d[C] = max(d[C], maximum(d[setdiff(C, ω)] for ω ∈ C; init=0))
     end
-    println(d)
     # Create a function that takes a vector of agents and returns the welfare
     # for that coalition.
     function welfare(C::Vector{Int})
