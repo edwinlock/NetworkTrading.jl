@@ -21,7 +21,7 @@ function dynamic(market::Market, ds::DynamicState)
     while length(ds.unsatisfied) > 0
         steps += 1
         i = rand(ds.unsatisfied)  # choose unsatisfied agent uniformly at random
-        best_response!(i, market, ds.offers)
+        best_response!(i, market, ds)
         push!(data.selected, i)
         push!(data.unsatisfied, copy(ds.unsatisfied))
         push!(data.offers, copy(ds.offers))
@@ -44,7 +44,7 @@ function best_response!(i, market::Market, ds::DynamicState)
     newoffers = updated_offers(i, p, Ψ, market)
     newly_unsatisfied = Set(
         counterpart(i, ω, market.Ω) for ω ∈ market.trades[i]
-            if offers[i][ω] ≠ newoffers[ω]
+            if ds.offers[i][ω] ≠ newoffers[ω]
     )
     ds.offers[i] = newoffers
     union!(ds.unsatisfied, newly_unsatisfied)
