@@ -1,7 +1,20 @@
+"""
+Implementations of functions that generate valuation functions, utility functions, and demand functions.
+
+Each valuation, for agent `i`, satisfies the following:
+- the empty bundle is mapped to 0.
+- bundles containing trades not associated with agent i are mapped to -M.
+
+Utility functions are quasilinear.
+
+Demand functions return a bundle that maximises utility.
+"""
+
 using StatsBase
 using Combinatorics
 
 const M = 10^8
+
 
 """
 Return general valuation from dictionary of values of trades.
