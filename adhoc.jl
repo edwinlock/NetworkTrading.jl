@@ -30,6 +30,7 @@ offers = [
 market = Market(Ω, valuation, demand)
 welfare = generate_welfare_fn(market);
 welfare([1,2,3])
+valuation[1](Set(Int[]))
 
 
 #ds = DynamicState(market, offers)

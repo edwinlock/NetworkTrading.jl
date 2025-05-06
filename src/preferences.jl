@@ -11,6 +11,7 @@ function generate_valuation(i, Ω, v::Dict{Set{Int}, Int})
     @assert all(t in (collect(powerset(collect(trades))) .|> Set) for t in keys(v)) "Keys must be valid bundles of agent $i"
     return function valuation(Ψ::Set{Int})::Int
         Ψ ∈ keys(v) && return v[Ψ]
+        Ψ == Set(Int[]) && return 0
         return -M
     end
 end
