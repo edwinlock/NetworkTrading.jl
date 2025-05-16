@@ -16,7 +16,7 @@ function generate_welfare_fn(market)
             welfare += market.valuation[i](Φ_i)
         end
         d[C] = max(d[C], welfare)
-        println("Φ: $Φ, C: $C, welfare: $welfare")
+        # println("Φ: $Φ, C: $C, welfare: $welfare")
     end
     # Percolate the maximum values upwards in the lattice of coalitions.
     for C ∈ nontrivial_coalitions
@@ -160,20 +160,3 @@ function find_optimal_core_imputation(n::Int, w, objective::Symbol)
     @info "$(objective) core imputation: $(value.(x))"
     return value.(x)
 end
-
-
-
-########### ad-hoc test of min-variance function:
-n = 3
-function w(C::Vector{Int})
-    length(C) ≤ 1 && return 0
-    C == [1,2] && return 0
-    C == [1,3] && return 6
-    C == [2,3] && return 3
-    C == [1,2,3] && return 8
-    return nothing
-end
-
-minvar_sol = find_optimal_core_imputation(n, w, :min_variance)
-leximin_sol = find_optimal_core_imputation(n, w, :leximin)
-leximax_sol = find_optimal_core_imputation(n, w, :leximax)
