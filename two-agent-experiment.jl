@@ -32,7 +32,7 @@ function coordinates(m, n)
     return coords
 end
 
-destinations(prices, market) = map(p->twoBRs(market, p), prices)
+destinations(prices, market) = map(p->twoBRs(market, offers, p), prices)
 
 differences(prices, market) = destinations(prices, market) .- prices
 

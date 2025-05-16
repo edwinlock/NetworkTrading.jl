@@ -180,7 +180,7 @@ function BipartiteUnitMarket(sellervals, buyervals, r)
         Dict(ω => rand(MINVAL:MAXVAL) for ω ∈ associated_trades(i, Ω))
         for i ∈ agents
     ]
-    return Market(Ω, offers, valuation, demand)
+    return Market(Ω, valuation, demand)
 end
 
 
@@ -224,7 +224,7 @@ function IntermediaryUnitMarket(sellervals, buyervals, numintermediaries::Int, r
         Dict(ω => rand(MINVAL:MAXVAL) for ω ∈ associated_trades(i, Ω))
         for i ∈ agents
     ]
-    return Market(Ω, offers, valuation, demand)
+    return Market(Ω, valuation, demand)
 end
 
 function RandomIntermediaryUnitMarket(numsellers, numbuyers, numintermediaries, r)
