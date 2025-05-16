@@ -23,13 +23,16 @@ demand = [
     generate_demand(3, Ω, valuation[3]),
 ]
 market = Market(Ω, valuation, demand)
-welfare = generate_welfare_fn(market);
-welfare([1,2])
+w = generate_welfare_fn(market);
+w([1,2])
 # valuation[1](Set(Int[])) ## test empty bundle
 
+minvar_sol = find_optimal_core_imputation(n, w, :min_variance)
+leximin_sol = find_optimal_core_imputation(n, w, :leximin)
+leximax_sol = find_optimal_core_imputation(n, w, :leximax)
 
 
-########### ad-hoc test of min-variance function:
+#### Welfare function with 3 agents
 # n = 3
 # function w(C::Vector{Int})
 #     length(C) ≤ 1 && return 0
@@ -40,9 +43,7 @@ welfare([1,2])
 #     return nothing
 # end
 
-# minvar_sol = find_optimal_core_imputation(n, w, :min_variance)
-# leximin_sol = find_optimal_core_imputation(n, w, :leximin)
-# leximax_sol = find_optimal_core_imputation(n, w, :leximax)
+
 
 
 
