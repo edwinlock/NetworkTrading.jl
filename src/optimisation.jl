@@ -1,5 +1,9 @@
+using Revise
 using JuMP, Gurobi
 using Combinatorics
+using ProgressMeter
+
+const env = Gurobi.Env()
 
 function generate_welfare_fn(market)
     n, m, Ω = market.n, market.m, market.Ω
@@ -50,7 +54,7 @@ Note: assumes that w(C) is defined for each C ⊆ 1:n!
 function minvar_model(n::Int, w)
     grand_coalition = collect(1:n)
     proper_subsets = collect.(powerset(1:n, 1, n-1))
-    model = Model(Gurobi.Optimizer)
+    model = Model(() -> Gurobi.Optimizer(env))
     @variable(model, x[1:n])
     @constraint(model, eq, sum(x) == w(grand_coalition))
     @constraint(model, ineq[C ∈ proper_subsets], sum(x[C]) ≥ w(C))
@@ -86,7 +90,7 @@ function leximin_model(n, w)
 
     grand_coalition = collect(1:n)
     proper_subsets = collect.(powerset(1:n, 1, n-1))
-    model = Model(Gurobi.Optimizer)
+    model = Model(() -> Gurobi.Optimizer(env))
     
     ## Define variables
     @variable(model, x[1:n] ≥ 0)
@@ -154,25 +158,86 @@ function find_optimal_core_imputation(n::Int, w, objective::Symbol)
     end
     # Create model and core imputation variables
     model, x = model_fn(n, w)
+    set_silent(model)
+    set_optimizer_attribute(model, "OutputFlag", 0)
     # Solve model and return result
     optimize!(model)
-    @info "$(objective) core imputation: $(value.(x))"
+    # @info "$(objective) core imputation: $(value.(x))"
     return value.(x)
 end
 
 
 
-########### ad-hoc test of min-variance function:
-n = 3
-function w(C::Vector{Int})
-    length(C) ≤ 1 && return 0
-    C == [1,2] && return 0
-    C == [1,3] && return 6
-    C == [2,3] && return 3
-    C == [1,2,3] && return 8
-    return nothing
+
+function generate_all_three_agent_values(; ub=100)
+    values = Tuple{Int, Int, Int, Int}[]
+    for (a, b, c) ∈ Iterators.product(1:ub, 1:ub, 1:ub)
+        for d ∈ max(a+b, a+c, b+c) : ub
+            # println("$a, $b, $c, $d")
+            push!(values, (a, b, c, d))
+        end
+    end
+    return values
 end
 
-minvar_sol = find_optimal_core_imputation(n, w, :min_variance)
-leximin_sol = find_optimal_core_imputation(n, w, :leximin)
-leximax_sol = find_optimal_core_imputation(n, w, :leximax)
+
+function create_three_agent_welfare_fn(a, b, c, d)
+    function welfare(C::Vector{Int})
+        @assert C ⊆ 1:3 "C must be a subset of agents 1 to 3."
+        length(C) <= 1 && return 0
+        C == [1, 2] && return a
+        C == [1, 3] && return b
+        C == [2, 3] && return c
+        return d
+    end
+    return welfare
+end
+
+
+# Try all possible welfare functions with values w(S) \leq ub.
+begin
+    n = 3
+    ub = 50
+    dgts = 3
+    @info "Starting exploration of all possible welfare functions for 3 agents with values w(S) ≤ $ub."
+    all_values = generate_all_three_agent_values(ub=ub)
+    @showprogress for (a, b, c, d) ∈ all_values
+        @debug "Considering the welfare function values ($a, $b, $c, $d)."
+        w = create_three_agent_welfare_fn(a, b, c, d)
+        minvar_sol = round.(find_optimal_core_imputation(n, w, :min_variance), digits=dgts)
+        leximin_sol = round.(find_optimal_core_imputation(n, w, :leximin), digits=dgts)
+        leximax_sol = round.(find_optimal_core_imputation(n, w, :leximax), digits=dgts)
+        @debug "minvar: $(minvar_sol)"
+        @debug "leximin: $(leximin_sol)"
+        @debug "leximax: $(leximax_sol)"
+        if !(leximin_sol ≈ leximax_sol)
+            println("The welfare function with values ($a, $b, $c, $d) has different leximin and leximax values:")
+            println("Leximin is $(leximin_sol) and leximax is $(leximax_sol).")
+        end
+        if !(minvar_sol ≈ leximin_sol)
+            println("The welfare function with values ($a, $b, $c, $d) has different minvar and leximin values:")
+            println("Leximin is $(minvar_sol) and leximax is $(leximin_sol).")
+        end
+        if !(minvar_sol ≈ leximax_sol)
+            println("The welfare function with values ($a, $b, $c, $d) has different minvar and leximax values:")
+            println("Leximin is $(minvar_sol) and leximax is $(leximax_sol).")
+        end
+    end
+    @info "Finished exploring."
+end
+
+
+########### ad-hoc test of min-variance function:
+# n = 3
+# function w(C::Vector{Int})
+#     length(C) ≤ 1 && return 0
+#     C == [1,2] && return 0
+#     C == [1,3] && return 6
+#     C == [2,3] && return 3
+#     C == [1,2,3] && return 8
+#     return nothing
+# end
+
+# minvar_sol = find_optimal_core_imputation(n, w, :min_variance)
+# leximin_sol = find_optimal_core_imputation(n, w, :leximin)
+# leximax_sol = find_optimal_core_imputation(n, w, :leximax)
