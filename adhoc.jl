@@ -22,15 +22,29 @@ demand = [
     generate_demand(2, Ω, valuation[2]),
     generate_demand(3, Ω, valuation[3]),
 ]
-offers = [
-    Dict(1 => 21, 2=>16),
-    Dict(1 => 9, 3=>14),
-    Dict(2 => 21, 3=>16)
-]
 market = Market(Ω, valuation, demand)
-welfare = generate_welfare_fn(market);
-welfare([1,2,3])
-valuation[1](Set(Int[]))
+w = generate_welfare_fn(market);
+w([1,2])
+# valuation[1](Set(Int[])) ## test empty bundle
+
+minvar_sol = find_optimal_core_imputation(n, w, :min_variance)
+leximin_sol = find_optimal_core_imputation(n, w, :leximin)
+leximax_sol = find_optimal_core_imputation(n, w, :leximax)
+
+
+#### Welfare function with 3 agents
+# n = 3
+# function w(C::Vector{Int})
+#     length(C) ≤ 1 && return 0
+#     C == [1,2] && return 0
+#     C == [1,3] && return 6
+#     C == [2,3] && return 3
+#     C == [1,2,3] && return 8
+#     return nothing
+# end
+
+
+
 
 
 #ds = DynamicState(market, offers)

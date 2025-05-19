@@ -20,7 +20,7 @@ function generate_welfare_fn(market)
             welfare += market.valuation[i](Φ_i)
         end
         d[C] = max(d[C], welfare)
-        println("Φ: $Φ, C: $C, welfare: $welfare")
+        # println("Φ: $Φ, C: $C, welfare: $welfare")
     end
     # Percolate the maximum values upwards in the lattice of coalitions.
     for C ∈ nontrivial_coalitions
@@ -82,10 +82,10 @@ s.t.    sum(x_i for i ∈ 1:n) == w(1:n)
 
 Note: assumes that w(C) is defined for each C ⊆ 1:n!
 """
-function leximin_model(n, w)
+function leximin_model(n::Int, w)
     # First we define a constant for the objective function, i.e., M = 1 / ε.
     # This constant should probably depend on n and the magnitude of the values in w.
-    # For now, we set it to a fairly number. TODO: improve.
+    # For now, we set it to a fairly large number. TODO: improve.
     M = 500
 
     grand_coalition = collect(1:n)
@@ -98,6 +98,7 @@ function leximin_model(n, w)
     @variable(model, P[1:n, 1:n], Bin)
 
     ## Define constraints
+    # Ensure that x is in the core
     @constraint(model, eq, sum(x) == w(grand_coalition))
     @constraint(model, ineq[C ∈ proper_subsets], sum(x[C]) ≥ w(C))
     # Ensure that P is a permutation matrix
@@ -165,9 +166,6 @@ function find_optimal_core_imputation(n::Int, w, objective::Symbol)
     # @info "$(objective) core imputation: $(value.(x))"
     return value.(x)
 end
-
-
-
 
 function generate_all_three_agent_values(; ub=100)
     values = Tuple{Int, Int, Int, Int}[]
