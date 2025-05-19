@@ -141,7 +141,7 @@ function leximax_model(n::Int, w)
     M = 500
     model, x, y = leximin_model(n, w)
     # Change the objective to leximax
-    @objective(model, Min, sum(M^(i) * y[i] for i ∈ 1:n))
+    @objective(model, Min, sum(M^(i-1) * y[i] for i ∈ 1:n))
     return model, x
 end
 
@@ -406,15 +406,15 @@ begin
         @debug "leximin: $(leximin_sol)"
         @debug "leximax: $(leximax_sol)"
         if !(leximin_sol ≈ leximax_sol)
-            println("The welfare function with values ($a, $b, $c, $d) has different leximin and leximax values:")
+            println("The welfare function with values $(vals) has different leximin and leximax values:")
             println("Leximin is $(leximin_sol) and leximax is $(leximax_sol).")
         end
         if !(minvar_sol ≈ leximin_sol)
-            println("The welfare function with values ($a, $b, $c, $d) has different minvar and leximin values:")
+            println("The welfare function with values $(vals) has different minvar and leximin values:")
             println("Leximin is $(minvar_sol) and leximax is $(leximin_sol).")
         end
         if !(minvar_sol ≈ leximax_sol)
-            println("The welfare function with values ($a, $b, $c, $d) has different minvar and leximax values:")
+            println("The welfare function with values $(vals) has different minvar and leximax values:")
             println("Leximin is $(minvar_sol) and leximax is $(leximax_sol).")
         end
         next!(prog)
