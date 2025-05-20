@@ -283,6 +283,7 @@ end
 begin
     ub = 10
     dgts = 3
+    n = 3
     @info "Starting exploration of all possible welfare functions for 4 agents with values w(S) ≤ $ub."
     all_values = generate_all_four_agent_values(ub=ub)
     @showprogress for (a, b, c, d, e, f, g, h, i, j, k) ∈ all_values
