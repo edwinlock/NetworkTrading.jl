@@ -24,12 +24,11 @@ demand = [
 ]
 market = Market(Ω, valuation, demand)
 w = generate_welfare_fn(market);
-w([1,2])
 # valuation[1](Set(Int[])) ## test empty bundle
 
-minvar_sol = find_optimal_core_imputation(n, w, :min_variance)
-leximin_sol = find_optimal_core_imputation(n, w, :leximin)
-leximax_sol = find_optimal_core_imputation(n, w, :leximax)
+minvar_sol = find_optimal_core_imputation(market.n, w, :min_variance)
+leximin_sol = find_optimal_core_imputation(market.n, w, :leximin)
+leximax_sol = find_optimal_core_imputation(market.n, w, :leximax)
 
 
 #### Welfare function with 3 agents
