@@ -9,26 +9,25 @@ using NetworkTrading
 # Agent 3 is buyer and seller
 
 Ω = [(1,2), (1,3), (3,2)]
-v1 = Dict(Set([1]) => 4, Set([2]) => 2, Set([1,2]) => 7)
-v2 = Dict(Set([1]) => 6, Set([3]) => 4, Set([1,3]) => 9)
-v3 = Dict(Set([2]) => 5, Set([3]) => 2, Set([2,3]) => 10)
-valuation = [
-    generate_valuation(1, Ω, v1),
-    generate_valuation(2, Ω, v2),
-    generate_valuation(3, Ω, v3)
-]
-demand = [
-    generate_demand(1, Ω, valuation[1]),
-    generate_demand(2, Ω, valuation[2]),
-    generate_demand(3, Ω, valuation[3]),
-]
+v = Dict{Int, Dict{Set{Int}, Int}}()
+# v[1] = Dict(Set([1]) => 4, Set([2]) => 2, Set([1,2]) => 7)
+# v[2] = Dict(Set([1]) => 6, Set([3]) => 4, Set([1,3]) => 9)
+# v[3] = Dict(Set([2]) => 5, Set([3]) => 2, Set([2,3]) => 10)
+
+v = [Dict(Set([1]) => 2, Set([2]) => 2, Set([2, 1]) => 1),
+     Dict(Set([3]) => 1, Set([1]) => 2, Set([3, 1]) => 1),
+     Dict(Set([3]) => 1, Set([2]) => 1, Set([2, 3]) => 1)]
+
+valuation = [generate_valuation(i, Ω, v[i]) for i in 1:3]
+demand = [generate_demand(i, Ω, valuation[i]) for i in 1:3]
 market = Market(Ω, valuation, demand)
-w = generate_welfare_fn(market);
+w = generate_welfare_fn(market)
+w([1,2,3]) # 
 # valuation[1](Set(Int[])) ## test empty bundle
 
-minvar_sol = find_optimal_core_imputation(market.n, w, :min_variance)
-leximin_sol = find_optimal_core_imputation(market.n, w, :leximin)
-leximax_sol = find_optimal_core_imputation(market.n, w, :leximax)
+# minvar_sol = find_optimal_core_imputation(market.n, w, :min_variance)
+# leximin_sol = find_optimal_core_imputation(market.n, w, :leximin)
+# leximax_sol = find_optimal_core_imputation(market.n, w, :leximax)
 
 
 #### Welfare function with 3 agents
