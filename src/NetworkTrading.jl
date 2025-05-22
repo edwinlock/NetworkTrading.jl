@@ -18,6 +18,7 @@ export plot_offers, plot_satisfied, plot_welfare, plot_lyapunov
 export plotLIP, plotLIP!, draw_arrow!
 export generate_valuation, generate_demand
 export generate_welfare_fn, find_optimal_core_imputation
+export core_model, sorted_core_model, leximin_model, leximax_model, minvar_model, find_optimal_core_imputation
 
 using PrecompileTools
 @compile_workload begin

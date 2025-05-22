@@ -1,7 +1,6 @@
 using Revise
 using JuMP, Gurobi
 using Combinatorics
-using ProgressMeter
 
 const env = Gurobi.Env()
 
@@ -37,6 +36,26 @@ end
 
 
 """
+Create model that represents the core. The core is defined by constraints:
+<no objective>
+    sum(x_i for i ∈ 1:n) == w(1:n)
+    sum(x_i for i ∈ C) ≥ w(C), for every C ⊆ 1:n.
+
+Note: assumes that w(C) is defined for each C ⊆ 1:n! The model lacks an objective,
+because it only defines the feasible region!
+"""
+function core_model(n::Int, w)
+    GC = collect(1:n)
+    proper_subsets = collect.(powerset(1:n, 1, n-1))
+    model = Model(() -> Gurobi.Optimizer(env))
+    @variable(model, x[1:n])
+    @constraint(model, eq, sum(x[GC]) == w(GC))
+    @constraint(model, ineq[C ∈ proper_subsets], sum(x[C]) ≥ w(C))
+    return model, x
+end
+
+
+"""
 Create model to find a minimum variance core imputation
 of the cooperative market game defined by agents 1 to `n` and
 welfare function `w`.
@@ -44,24 +63,35 @@ welfare function `w`.
 Returns model and core imputation variables x.
 
 The convex optimisation program is:
-
 min     sum(x_i^2 for i ∈ 1:n)
-s.t.    sum(x_i for i ∈ 1:n) == w(1:n)
-        sum(x_i for i ∈ C) ≥ w(C), for every C ⊆ 1:n.
+s.t.    x ∈ core.
 
 Note: assumes that w(C) is defined for each C ⊆ 1:n!
 """
 function minvar_model(n::Int, w)
-    grand_coalition = collect(1:n)
-    proper_subsets = collect.(powerset(1:n, 1, n-1))
-    model = Model(() -> Gurobi.Optimizer(env))
-    @variable(model, x[1:n])
-    @constraint(model, eq, sum(x) == w(grand_coalition))
-    @constraint(model, ineq[C ∈ proper_subsets], sum(x[C]) ≥ w(C))
+    model, x = core_model(n, w)    
     @objective(model, Min, sum(x[i]^2 for i ∈ 1:n))
     return model, x
 end
 
+
+function sorted_core_model(n::Int, w)
+    model, x = core_model(n, w)
+
+    # Define additional variables
+    @variable(model, y[1:n] ≥ 0)
+    @variable(model, P[1:n, 1:n], Bin)
+
+    ## Define constraints
+    # Ensure that P is a permutation matrix
+    @constraint(model, col[i ∈ 1:n], sum(P[:,i]) == 1)
+    @constraint(model, row[i ∈ 1:n], sum(P[i,:]) == 1)
+    # Define relation y == P x
+    @constraint(model, P * x .== y)
+    # Ensure that y is sorted in ascending order
+    @constraint(model, sorting[i ∈ 1:n-1], y[i] ≤ y[i+1])
+    return model, x, y
+end
 
 
 """
@@ -73,12 +103,7 @@ Returns model and core imputation variables x.
 The convex optimisation program is:
 
 lexicographically largest y
-s.t.    sum(x_i for i ∈ 1:n) == w(1:n)
-        sum(x_i for i ∈ C) ≥ w(C), for every C ⊆ 1:n.
-        x_i ≥ 0, for all i ∈ 1:n
-        P is a permutation matrix
-        y = P x
-        y is sorted in ascending order
+s.t.    x, y ∈ sorted_core, where y is x sorted in ascending order
 
 Note: assumes that w(C) is defined for each C ⊆ 1:n!
 """
@@ -88,29 +113,11 @@ function leximin_model(n::Int, w)
     # For now, we set it to a fairly large number. TODO: improve.
     M = 500
 
-    grand_coalition = collect(1:n)
-    proper_subsets = collect.(powerset(1:n, 1, n-1))
-    model = Model(() -> Gurobi.Optimizer(env))
+    # Construct model
+    model, x, y = sorted_core_model(n, w)
     
-    ## Define variables
-    @variable(model, x[1:n] ≥ 0)
-    @variable(model, y[1:n] ≥ 0)
-    @variable(model, P[1:n, 1:n], Bin)
-
-    ## Define constraints
-    # Ensure that x is in the core
-    @constraint(model, eq, sum(x) == w(grand_coalition))
-    @constraint(model, ineq[C ∈ proper_subsets], sum(x[C]) ≥ w(C))
-    # Ensure that P is a permutation matrix
-    @constraint(model, col[i ∈ 1:n], sum(P[:,i]) == 1)
-    @constraint(model, row[i ∈ 1:n], sum(P[i,:]) == 1)
-    # Define relation y == P x
-    @constraint(model, P * x == y)  # change to .== if Gurobi can't handle ==
-    # Ensure that y is sorted in ascending order
-    @constraint(model, sorting[i ∈ 1:n-1], y[i] ≤ y[i+1])
-
     ## Define objective
-    @objective(model, Max, sum(M^(n-i) * y[i] for i ∈ 1:n))
+    @objective(model, Max, sum(M^(1+n-i) * y[i] for i ∈ 1:n))
     
     return model, x, y
 end
@@ -139,12 +146,12 @@ function leximax_model(n::Int, w)
     # This constant should probably depend on n and the magnitude of the values in w.
     # For now, we set it to a fairly large number. TODO: improve.
     M = 500
-    model, x, y = leximin_model(n, w)
-    # Ensure that y is sorted in descending order
-    unregister(model, :sorting)
-    @constraint(model, sorting[i ∈ 1:n-1], y[i] ≥ y[i+1])
+
+    # Construct model
+    model, x, y = sorted_core_model(n, w)
+
     # Change the objective to leximax
-    @objective(model, Min, sum(M^(n-i) * y[i] for i ∈ 1:n))
+    @objective(model, Min, sum(M^i * y[i] for i ∈ 1:n))
     return model, x, y
 end
 
@@ -170,301 +177,3 @@ function find_optimal_core_imputation(n::Int, w, objective::Symbol)
     is_solved_and_feasible(model) && return value.(x)
     return nothing
 end
-
-w = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 5)
-w_fn = create_four_agent_welfare_fn(w)
-# So w_fn([1,2,4]) = 5, w_fn([1,3,4]) = 5, w_fn([1,2,3,4]) = 5
-leximin_sol = find_optimal_core_imputation(4, w_fn, :leximin)
-leximax_sol = find_optimal_core_imputation(4, w_fn, :leximax)
-minmodel, minx, miny = leximin_model(4, w_fn)
-optimize!(minmodel)
-value.(miny)
-value.(minx)
-maxmodel, maxx, maxy = leximax_model(4, w_fn)
-optimize!(maxmodel)
-value.(maxy)
-value.(maxx)
-
-
-########### ad-hoc test of min-variance function:
-# n = 3
-# function w(C::Vector{Int})
-#     length(C) ≤ 1 && return 0
-#     C == [1,2] && return 0
-#     C == [1,3] && return 6
-#     C == [2,3] && return 3
-#     C == [1,2,3] && return 8
-#     return nothing
-# end
-
-# minvar_sol = find_optimal_core_imputation(n, w, :min_variance)
-# leximin_sol = find_optimal_core_imputation(n, w, :leximin)
-# leximax_sol = find_optimal_core_imputation(n, w, :leximax)
-
-
-# Below, there's lots of code to explore leximin and leximax core outcome for arbitrary super-additive characteristic functions.
-
-function generate_all_three_agent_values(; ub=100)
-    values = NTuple{8, Int}[]
-    for (w12, w13, w23) ∈ Iterators.product(0:ub, 0:ub, 0:ub)
-        for w123 ∈ max(w12, w13, w23) : ub
-            # println("$w12, $w13, $w23, $w123")
-            push!(values, (0, 0, 0, 0, w12, w13, w23, w123))
-        end
-    end
-    return values
-end
-
-
-function create_three_agent_welfare_fn(w::NTuple{8,Int})
-    function welfare(C::Vector{Int})
-        @assert C ⊆ 1:3 "C must be a subset of agents 1 to 3."
-        length(C) <= 1 && return 0
-        w12, w13, w23, w123 = w[5:8]
-        C == [1, 2] && return w12
-        C == [1, 3] && return w13
-        C == [2, 3] && return w23
-        return w123
-    end
-    return welfare
-end
-
-
-
-function generate_all_four_agent_values(; ub=5)
-    values = NTuple{15, Int}[]
-    for (w12, w13, w14, w23, w24, w34) ∈ Iterators.product(0:ub, 0:ub, 0:ub, 0:ub, 0:ub, 0:ub)
-        w123_min = max(w12, w13, w23)
-        w124_min = max(w12, w14, w24)
-        w134_min = max(w13, w14, w34)
-        w234_min = max(w23, w24, w34)
-        for (w123, w124, w134, w234) ∈ Iterators.product(w123_min:ub, w124_min:ub, w134_min:ub, w234_min:ub)
-            w1234_min = max(w123, w124, w134, w234, w12+w34, w13+w24, w14+w23)
-            for w1234 ∈ w1234_min:ub
-                push!(values, (0, 0, 0, 0, w12, w13, w13, w23, w24, w34, w123, w124, w134, w234, w1234))
-            end
-        end
-    end
-    return values
-end
-
-
-function create_four_agent_welfare_fn(w)
-    w12, w13, w14, w23, w24, w34, w123, w124, w134, w234, w1234 = w[5:end]
-    function welfare(C::Vector{Int})
-        @assert C ⊆ 1:4 "C must be a subset of agents 1 to 4."
-        length(C) <= 1 && return 0
-        C == [1, 2] && return w12
-        C == [1, 3] && return w13
-        C == [1, 4] && return w14
-        C == [2, 3] && return w23
-        C == [2, 4] && return w24
-        C == [3, 4] && return w34
-        C == [1, 2, 3] && return w123
-        C == [1, 2, 4] && return w124
-        C == [1, 3, 4] && return w134
-        C == [2, 3, 4] && return w234
-        C == [1, 2, 3, 4] && return w1234
-    end
-    return welfare
-end
-
-
-# Try all possible welfare functions for 3 agents with values w(S) \leq ub.
-begin
-    atol = 10e-4
-    n = 3
-    ub = 10
-    @info "Starting exploration of all possible welfare functions for 3 agents with values w(S) ≤ $ub."
-    all_values = generate_all_three_agent_values(ub=ub)
-    infeasible_instances = 0
-    feasible_instances = 0 
-    @showprogress for w ∈ all_values
-        @debug "Considering the welfare function values $w."
-        w_fn = create_three_agent_welfare_fn(w)
-        minvar_sol = find_optimal_core_imputation(n, w_fn, :min_variance)
-        # Skip loop iteration if core is empty
-        if isnothing(minvar_sol)
-            infeasible_instances += 1
-            continue
-        end
-        feasible_instances += 1
-        leximin_sol = find_optimal_core_imputation(n, w_fn, :leximin)
-        leximax_sol = find_optimal_core_imputation(n, w_fn, :leximax)
-        @debug "minvar: $(minvar_sol)"
-        @debug "leximin: $(leximin_sol)"
-        @debug "leximax: $(leximax_sol)"
-        if any(abs.(leximin_sol - leximax_sol) .≥ atol)
-            println("The welfare function with values $w has different leximin and leximax values:")
-            println("Leximin is $(leximin_sol) and leximax is $(leximax_sol).")
-        end
-        if any(abs.(minvar_sol - leximin_sol) .≥ atol)
-            println("The welfare function with values $w has different minvar and leximin values:")
-            println("Leximin is $(minvar_sol) and leximax is $(leximin_sol).")
-        end
-        if any(abs.(minvar_sol - leximax_sol) .≥ atol)
-            println("The welfare function with values $w has different minvar and leximax values:")
-            println("Leximin is $(minvar_sol) and leximax is $(leximax_sol).")
-        end
-    end
-    @info "Finished exploring. Encountered $feasible_instances feasible instances and $infeasible_instances infeasible instances."
-end
-
-
-# Try all possible welfare functions for 4 agents with values w(S) \leq ub.
-begin
-    atol = 10e-4
-    n = 4
-    ub = 5
-    @info "Starting exploration of all possible welfare functions for 4 agents with values w(S) ≤ $ub."
-    all_values = generate_all_four_agent_values(ub=ub)
-    infeasible_instances = 0
-    feasible_instances = 0 
-    @showprogress for w ∈ all_values
-        @debug "Considering the welfare function values $w."
-        w_fn = create_four_agent_welfare_fn(w)
-        minvar_sol = find_optimal_core_imputation(n, w_fn, :min_variance)
-        # Skip loop iteration if core is empty
-        if isnothing(minvar_sol)
-            infeasible_instances += 1
-            continue
-        end
-        feasible_instances += 1
-        leximin_sol = find_optimal_core_imputation(n, w_fn, :leximin)
-        leximax_sol = find_optimal_core_imputation(n, w_fn, :leximax)
-        @debug "minvar: $(minvar_sol)"
-        @debug "leximin: $(leximin_sol)"
-        @debug "leximax: $(leximax_sol)"
-        if any(abs.(leximin_sol - leximax_sol) .≥ atol)
-            println("The welfare function with values $w has different leximin and leximax values:")
-            println("Leximin is $(leximin_sol) and leximax is $(leximax_sol).")
-        end
-        if any(abs.(minvar_sol - leximin_sol) .≥ atol)
-            println("The welfare function with values $w has different minvar and leximin values:")
-            println("Leximin is $(minvar_sol) and leximax is $(leximin_sol).")
-        end
-        if any(abs.(minvar_sol - leximax_sol) .≥ atol)
-            println("The welfare function with values $w has different minvar and leximax values:")
-            println("Leximin is $(minvar_sol) and leximax is $(leximax_sol).")
-        end
-    end
-    @info "Finished exploring. Encountered $feasible_instances feasible instances and $infeasible_instances infeasible instances."
-end
-
-
-
-# ------------------------------ #
-# DON'T USE THE CODE BELOW       #
-
-### An iterator to generate all welfare functions w for sets S ⊆ 1:n with integer entries w(S) \in [0, ub].
-struct WelfareFunctions
-    n::Int  # ground set 1 to n
-    all_sets::Vector{Vector{Int}}
-    index::Dict{Vector{Int}, Int}  # maps each set to index in all_sets
-    ub::Int
-end
-
-
-function WelfareFunctions(n, ub)
-    allsets = collect(powerset(1:n))
-    numsets = 2^n
-    index = Dict(allsets[i] => i for i ∈ 1:numsets)
-    return WelfareFunctions(n, allsets, index, ub)
-end
-
-
-function Base.iterate(iter::WelfareFunctions, w::Vector{Int})
-    numsets = 2^iter.n
-    # Update the state w
-    w = copy(w)
-    # Starting from last entry, increment entries and and carry over if entry exceeds iter.ub or any subsequent entry exceeds iter.ub
-    i = numsets
-    while i ≥ 1+iter.n+1  # we don't want to increment the first 1+n entries, because they correspond to sets of size <= 1
-        w[i] += 1
-        # Set entries w[k+1], ..., w[n] to lowest possible value given entries w[1], ..., w[k]
-        for k ∈ i+1:numsets
-            S = iter.all_sets[k]
-            w[k] = maximum_partition_value(iter, w, S)
-        end
-        maximum(w[i:numsets]) <= iter.ub && break  # stop without decrementing i if no carry-over needed
-        i -= 1
-    end
-    i == 1+iter.n && return nothing
-    # Construct the welfare function from state w
-    w_fn = welfare_fn(iter, w)
-    return w_fn, w
-end
-
-
-function Base.iterate(iter::WelfareFunctions)
-    w = zeros(Int, 2^iter.n)
-    w[end] = -1
-    return iterate(iter::WelfareFunctions, w)
-end
-
-
-Base.IteratorSize(iter::WelfareFunctions) = Base.SizeUnknown()
-
-function welfare_fn(iter, w)
-    function w_fn(S::Vector{Int})
-        @assert S ⊆ 1:iter.n  "Set must be contained in 1:$(iter.n)."
-        length(S) ≤ 1 && return 0
-        return w[iter.index[S]]
-    end
-    return w_fn
-end
-
-
-
-"""
-Compute the maximum value w(U) + w(V) over all non-trivial partitions U, V of S.
-"""
-function maximum_partition_value(iter, w, S)
-    result = 0
-    for U ∈ powerset(S, 1, length(S)-1)
-        for V ∈ powerset(S, 1, length(S)-1)
-            if U ≠ V
-                result = max(result, partition_value(iter, w, U, V))
-            end
-        end
-    end
-    return result
-end
-
-"""Compute the value w(U) + w(V) of sets U and V"""
-partition_value(iter, w, U, V) = w[iter.index[U]] + w[iter.index[V]]
-
-
-
-# Try all possible welfare functions with values w(S) ∈ [0, ub].
-# begin
-#     n = 4
-#     ub = 9
-#     dgts = 3
-#     @info "Starting exploration of all possible welfare functions for $(n) agents with values w(S) ≤ $(ub)."
-#     prog = ProgressUnknown(desc="Titles read:")
-#     for w ∈ WelfareFunctions(n, ub)
-#         vals = [ w(S) for S ∈ powerset(1:n) ]
-#         @debug "Considering the welfare function with values $(vals)."
-#         minvar_sol = round.(find_optimal_core_imputation(n, w, :min_variance), digits=dgts)
-#         leximin_sol = round.(find_optimal_core_imputation(n, w, :leximin), digits=dgts)
-#         leximax_sol = round.(find_optimal_core_imputation(n, w, :leximax), digits=dgts)
-#         @debug "minvar: $(minvar_sol)"
-#         @debug "leximin: $(leximin_sol)"
-#         @debug "leximax: $(leximax_sol)"
-#         if !(leximin_sol ≈ leximax_sol)
-#             println("The welfare function with values $(vals) has different leximin and leximax values:")
-#             println("Leximin is $(leximin_sol) and leximax is $(leximax_sol).")
-#         end
-#         if !(minvar_sol ≈ leximin_sol)
-#             println("The welfare function with values $(vals) has different minvar and leximin values:")
-#             println("Leximin is $(minvar_sol) and leximax is $(leximin_sol).")
-#         end
-#         if !(minvar_sol ≈ leximax_sol)
-#             println("The welfare function with values $(vals) has different minvar and leximax values:")
-#             println("Leximin is $(minvar_sol) and leximax is $(leximax_sol).")
-#         end
-#         next!(prog)
-#     end
-#     finish!(prog)
-# end
