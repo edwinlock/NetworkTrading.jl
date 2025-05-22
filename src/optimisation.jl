@@ -72,7 +72,7 @@ Returns model and core imputation variables x.
 
 The convex optimisation program is:
 
-leximax y
+lexicographically largest y
 s.t.    sum(x_i for i ∈ 1:n) == w(1:n)
         sum(x_i for i ∈ C) ≥ w(C), for every C ⊆ 1:n.
         x_i ≥ 0, for all i ∈ 1:n
@@ -124,7 +124,7 @@ Returns model and core imputation variables x.
 
 The convex optimisation program is:
 
-leximin y
+lexicographically smallest y
 s.t.    sum(x_i for i ∈ 1:n) == w(1:n)
         sum(x_i for i ∈ C) ≥ w(C), for every C ⊆ 1:n.
         x_i ≥ 0, for all i ∈ 1:n
@@ -140,9 +140,12 @@ function leximax_model(n::Int, w)
     # For now, we set it to a fairly large number. TODO: improve.
     M = 500
     model, x, y = leximin_model(n, w)
+    # Ensure that y is sorted in descending order
+    unregister(model, :sorting)
+    @constraint(model, sorting[i ∈ 1:n-1], y[i] ≥ y[i+1])
     # Change the objective to leximax
-    @objective(model, Min, sum(M^(i-1) * y[i] for i ∈ 1:n))
-    return model, x
+    @objective(model, Min, sum(M^(n-i) * y[i] for i ∈ 1:n))
+    return model, x, y
 end
 
 
@@ -164,9 +167,23 @@ function find_optimal_core_imputation(n::Int, w, objective::Symbol)
     # Solve model and return result
     optimize!(model)
     # @info "$(objective) core imputation: $(value.(x))"
-    return value.(x)
+    is_solved_and_feasible(model) && return value.(x)
+    return nothing
 end
 
+w = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 5)
+w_fn = create_four_agent_welfare_fn(w)
+# So w_fn([1,2,4]) = 5, w_fn([1,3,4]) = 5, w_fn([1,2,3,4]) = 5
+leximin_sol = find_optimal_core_imputation(4, w_fn, :leximin)
+leximax_sol = find_optimal_core_imputation(4, w_fn, :leximax)
+minmodel, minx, miny = leximin_model(4, w_fn)
+optimize!(minmodel)
+value.(miny)
+value.(minx)
+maxmodel, maxx, maxy = leximax_model(4, w_fn)
+optimize!(maxmodel)
+value.(maxy)
+value.(maxx)
 
 
 ########### ad-hoc test of min-variance function:
@@ -188,25 +205,26 @@ end
 # Below, there's lots of code to explore leximin and leximax core outcome for arbitrary super-additive characteristic functions.
 
 function generate_all_three_agent_values(; ub=100)
-    values = Tuple{Int, Int, Int, Int}[]
-    for (a, b, c) ∈ Iterators.product(0:ub, 0:ub, 0:ub)
-        for d ∈ max(a+b, a+c, b+c) : ub
-            # println("$a, $b, $c, $d")
-            push!(values, (a, b, c, d))
+    values = NTuple{8, Int}[]
+    for (w12, w13, w23) ∈ Iterators.product(0:ub, 0:ub, 0:ub)
+        for w123 ∈ max(w12, w13, w23) : ub
+            # println("$w12, $w13, $w23, $w123")
+            push!(values, (0, 0, 0, 0, w12, w13, w23, w123))
         end
     end
     return values
 end
 
 
-function create_three_agent_welfare_fn(a, b, c, d)
+function create_three_agent_welfare_fn(w::NTuple{8,Int})
     function welfare(C::Vector{Int})
         @assert C ⊆ 1:3 "C must be a subset of agents 1 to 3."
         length(C) <= 1 && return 0
-        C == [1, 2] && return a
-        C == [1, 3] && return b
-        C == [2, 3] && return c
-        return d
+        w12, w13, w23, w123 = w[5:8]
+        C == [1, 2] && return w12
+        C == [1, 3] && return w13
+        C == [2, 3] && return w23
+        return w123
     end
     return welfare
 end
@@ -214,16 +232,16 @@ end
 
 
 function generate_all_four_agent_values(; ub=5)
-    values = Tuple{Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int}[]
-    for (a, b, c, d, e, f) ∈ Iterators.product(0:ub, 0:ub, 0:ub, 0:ub, 0:ub, 0:ub)
-        g_min = max(a+b, a+d, b+d)
-        h_min = max(a+c, a+e, c+e)
-        i_min = max(b+c, b+f, c+f)
-        j_min = max(d+e, d+f, e+f)
-        for (g, h, i, j) ∈ Iterators.product(g_min:ub, h_min:ub, i_min:ub, j_min:ub)
-            k_min = max(a+f, b+e, c+d, a+i, a+j, b+h, b+j, c+g, c+j, d+h, d+i, e+h, e+i, f+g, f+h, g+h, g+i, g+j, h+i, h+j, i+j)
-            for k ∈ k_min:ub
-                push!(values, (a, b, c, d, e, f, g, h, i, j, k))
+    values = NTuple{15, Int}[]
+    for (w12, w13, w14, w23, w24, w34) ∈ Iterators.product(0:ub, 0:ub, 0:ub, 0:ub, 0:ub, 0:ub)
+        w123_min = max(w12, w13, w23)
+        w124_min = max(w12, w14, w24)
+        w134_min = max(w13, w14, w34)
+        w234_min = max(w23, w24, w34)
+        for (w123, w124, w134, w234) ∈ Iterators.product(w123_min:ub, w124_min:ub, w134_min:ub, w234_min:ub)
+            w1234_min = max(w123, w124, w134, w234, w12+w34, w13+w24, w14+w23)
+            for w1234 ∈ w1234_min:ub
+                push!(values, (0, 0, 0, 0, w12, w13, w13, w23, w24, w34, w123, w124, w134, w234, w1234))
             end
         end
     end
@@ -231,83 +249,112 @@ function generate_all_four_agent_values(; ub=5)
 end
 
 
-function create_four_agent_welfare_fn(a, b, c, d, e, f, g, h, i, j, k)
+function create_four_agent_welfare_fn(w)
+    w12, w13, w14, w23, w24, w34, w123, w124, w134, w234, w1234 = w[5:end]
     function welfare(C::Vector{Int})
-        @assert C ⊆ 1:4 "C must be a subset of agents 1 to 3."
+        @assert C ⊆ 1:4 "C must be a subset of agents 1 to 4."
         length(C) <= 1 && return 0
-        C == [1, 2] && return a
-        C == [1, 3] && return b
-        C == [2, 3] && return c
-        return d
+        C == [1, 2] && return w12
+        C == [1, 3] && return w13
+        C == [1, 4] && return w14
+        C == [2, 3] && return w23
+        C == [2, 4] && return w24
+        C == [3, 4] && return w34
+        C == [1, 2, 3] && return w123
+        C == [1, 2, 4] && return w124
+        C == [1, 3, 4] && return w134
+        C == [2, 3, 4] && return w234
+        C == [1, 2, 3, 4] && return w1234
     end
     return welfare
 end
 
 
-
-
-# # Try all possible welfare functions with values w(S) \leq ub.
-# begin
-#     n = 3
-#     ub = 10
-#     dgts = 3
-#     @info "Starting exploration of all possible welfare functions for 3 agents with values w(S) ≤ $ub."
-#     all_values = generate_all_three_agent_values(ub=ub)
-#     @showprogress for (a, b, c, d) ∈ all_values
-#         @debug "Considering the welfare function values ($a, $b, $c, $d)."
-#         w = create_three_agent_welfare_fn(a, b, c, d)
-#         minvar_sol = round.(find_optimal_core_imputation(n, w, :min_variance), digits=dgts)
-#         leximin_sol = round.(find_optimal_core_imputation(n, w, :leximin), digits=dgts)
-#         leximax_sol = round.(find_optimal_core_imputation(n, w, :leximax), digits=dgts)
-#         @debug "minvar: $(minvar_sol)"
-#         @debug "leximin: $(leximin_sol)"
-#         @debug "leximax: $(leximax_sol)"
-#         if !(leximin_sol ≈ leximax_sol)
-#             println("The welfare function with values ($a, $b, $c, $d) has different leximin and leximax values:")
-#             println("Leximin is $(leximin_sol) and leximax is $(leximax_sol).")
-#         end
-#         if !(minvar_sol ≈ leximin_sol)
-#             println("The welfare function with values ($a, $b, $c, $d) has different minvar and leximin values:")
-#             println("Leximin is $(minvar_sol) and leximax is $(leximin_sol).")
-#         end
-#         if !(minvar_sol ≈ leximax_sol)
-#             println("The welfare function with values ($a, $b, $c, $d) has different minvar and leximax values:")
-#             println("Leximin is $(minvar_sol) and leximax is $(leximax_sol).")
-#         end
-#     end
-#     @info "Finished exploring."
-# end
-
-
-# Try all possible welfare functions with values w(S) \leq ub.
+# Try all possible welfare functions for 3 agents with values w(S) \leq ub.
 begin
+    atol = 10e-4
+    n = 3
     ub = 10
-    dgts = 3
-    @info "Starting exploration of all possible welfare functions for 4 agents with values w(S) ≤ $ub."
-    all_values = generate_all_four_agent_values(ub=ub)
-    @showprogress for (a, b, c, d, e, f, g, h, i, j, k) ∈ all_values
-        w = create_four_agent_welfare_fn(a, b, c, d, e, f, g, h, i, j, k)
-        minvar_sol = round.(find_optimal_core_imputation(n, w, :min_variance), digits=dgts)
-        leximin_sol = round.(find_optimal_core_imputation(n, w, :leximin), digits=dgts)
-        leximax_sol = round.(find_optimal_core_imputation(n, w, :leximax), digits=dgts)
+    @info "Starting exploration of all possible welfare functions for 3 agents with values w(S) ≤ $ub."
+    all_values = generate_all_three_agent_values(ub=ub)
+    infeasible_instances = 0
+    feasible_instances = 0 
+    @showprogress for w ∈ all_values
+        @debug "Considering the welfare function values $w."
+        w_fn = create_three_agent_welfare_fn(w)
+        minvar_sol = find_optimal_core_imputation(n, w_fn, :min_variance)
+        # Skip loop iteration if core is empty
+        if isnothing(minvar_sol)
+            infeasible_instances += 1
+            continue
+        end
+        feasible_instances += 1
+        leximin_sol = find_optimal_core_imputation(n, w_fn, :leximin)
+        leximax_sol = find_optimal_core_imputation(n, w_fn, :leximax)
         @debug "minvar: $(minvar_sol)"
         @debug "leximin: $(leximin_sol)"
         @debug "leximax: $(leximax_sol)"
-        if !(leximin_sol ≈ leximax_sol)
-            println("The welfare function with values ($a, $b, $c, $d) has different leximin and leximax values:")
+        if any(abs.(leximin_sol - leximax_sol) .≥ atol)
+            println("The welfare function with values $w has different leximin and leximax values:")
             println("Leximin is $(leximin_sol) and leximax is $(leximax_sol).")
         end
-        if !(minvar_sol ≈ leximin_sol)
-            println("The welfare function with values ($a, $b, $c, $d) has different minvar and leximin values:")
+        if any(abs.(minvar_sol - leximin_sol) .≥ atol)
+            println("The welfare function with values $w has different minvar and leximin values:")
             println("Leximin is $(minvar_sol) and leximax is $(leximin_sol).")
         end
-        if !(minvar_sol ≈ leximax_sol)
-            println("The welfare function with values ($a, $b, $c, $d) has different minvar and leximax values:")
+        if any(abs.(minvar_sol - leximax_sol) .≥ atol)
+            println("The welfare function with values $w has different minvar and leximax values:")
             println("Leximin is $(minvar_sol) and leximax is $(leximax_sol).")
         end
     end
-    @info "Finished exploring."
+    @info "Finished exploring. Encountered $feasible_instances feasible instances and $infeasible_instances infeasible instances."
 end
+
+
+# Try all possible welfare functions for 4 agents with values w(S) \leq ub.
+begin
+    atol = 10e-4
+    n = 4
+    ub = 5
+    @info "Starting exploration of all possible welfare functions for 4 agents with values w(S) ≤ $ub."
+    all_values = generate_all_four_agent_values(ub=ub)
+    infeasible_instances = 0
+    feasible_instances = 0 
+    @showprogress for w ∈ all_values
+        @debug "Considering the welfare function values $w."
+        w_fn = create_four_agent_welfare_fn(w)
+        minvar_sol = find_optimal_core_imputation(n, w_fn, :min_variance)
+        # Skip loop iteration if core is empty
+        if isnothing(minvar_sol)
+            infeasible_instances += 1
+            continue
+        end
+        feasible_instances += 1
+        leximin_sol = find_optimal_core_imputation(n, w_fn, :leximin)
+        leximax_sol = find_optimal_core_imputation(n, w_fn, :leximax)
+        @debug "minvar: $(minvar_sol)"
+        @debug "leximin: $(leximin_sol)"
+        @debug "leximax: $(leximax_sol)"
+        if any(abs.(leximin_sol - leximax_sol) .≥ atol)
+            println("The welfare function with values $w has different leximin and leximax values:")
+            println("Leximin is $(leximin_sol) and leximax is $(leximax_sol).")
+        end
+        if any(abs.(minvar_sol - leximin_sol) .≥ atol)
+            println("The welfare function with values $w has different minvar and leximin values:")
+            println("Leximin is $(minvar_sol) and leximax is $(leximin_sol).")
+        end
+        if any(abs.(minvar_sol - leximax_sol) .≥ atol)
+            println("The welfare function with values $w has different minvar and leximax values:")
+            println("Leximin is $(minvar_sol) and leximax is $(leximax_sol).")
+        end
+    end
+    @info "Finished exploring. Encountered $feasible_instances feasible instances and $infeasible_instances infeasible instances."
+end
+
+
+
+# ------------------------------ #
+# DON'T USE THE CODE BELOW       #
 
 ### An iterator to generate all welfare functions w for sets S ⊆ 1:n with integer entries w(S) \in [0, ub].
 struct WelfareFunctions
