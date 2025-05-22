@@ -437,34 +437,34 @@ partition_value(iter, w, U, V) = w[iter.index[U]] + w[iter.index[V]]
 
 
 # Try all possible welfare functions with values w(S) ∈ [0, ub].
-begin
-    n = 4
-    ub = 9
-    dgts = 3
-    @info "Starting exploration of all possible welfare functions for $(n) agents with values w(S) ≤ $(ub)."
-    prog = ProgressUnknown(desc="Titles read:")
-    for w ∈ WelfareFunctions(n, ub)
-        vals = [ w(S) for S ∈ powerset(1:n) ]
-        @debug "Considering the welfare function with values $(vals)."
-        minvar_sol = round.(find_optimal_core_imputation(n, w, :min_variance), digits=dgts)
-        leximin_sol = round.(find_optimal_core_imputation(n, w, :leximin), digits=dgts)
-        leximax_sol = round.(find_optimal_core_imputation(n, w, :leximax), digits=dgts)
-        @debug "minvar: $(minvar_sol)"
-        @debug "leximin: $(leximin_sol)"
-        @debug "leximax: $(leximax_sol)"
-        if !(leximin_sol ≈ leximax_sol)
-            println("The welfare function with values $(vals) has different leximin and leximax values:")
-            println("Leximin is $(leximin_sol) and leximax is $(leximax_sol).")
-        end
-        if !(minvar_sol ≈ leximin_sol)
-            println("The welfare function with values $(vals) has different minvar and leximin values:")
-            println("Leximin is $(minvar_sol) and leximax is $(leximin_sol).")
-        end
-        if !(minvar_sol ≈ leximax_sol)
-            println("The welfare function with values $(vals) has different minvar and leximax values:")
-            println("Leximin is $(minvar_sol) and leximax is $(leximax_sol).")
-        end
-        next!(prog)
-    end
-    finish!(prog)
-end
+# begin
+#     n = 4
+#     ub = 9
+#     dgts = 3
+#     @info "Starting exploration of all possible welfare functions for $(n) agents with values w(S) ≤ $(ub)."
+#     prog = ProgressUnknown(desc="Titles read:")
+#     for w ∈ WelfareFunctions(n, ub)
+#         vals = [ w(S) for S ∈ powerset(1:n) ]
+#         @debug "Considering the welfare function with values $(vals)."
+#         minvar_sol = round.(find_optimal_core_imputation(n, w, :min_variance), digits=dgts)
+#         leximin_sol = round.(find_optimal_core_imputation(n, w, :leximin), digits=dgts)
+#         leximax_sol = round.(find_optimal_core_imputation(n, w, :leximax), digits=dgts)
+#         @debug "minvar: $(minvar_sol)"
+#         @debug "leximin: $(leximin_sol)"
+#         @debug "leximax: $(leximax_sol)"
+#         if !(leximin_sol ≈ leximax_sol)
+#             println("The welfare function with values $(vals) has different leximin and leximax values:")
+#             println("Leximin is $(leximin_sol) and leximax is $(leximax_sol).")
+#         end
+#         if !(minvar_sol ≈ leximin_sol)
+#             println("The welfare function with values $(vals) has different minvar and leximin values:")
+#             println("Leximin is $(minvar_sol) and leximax is $(leximin_sol).")
+#         end
+#         if !(minvar_sol ≈ leximax_sol)
+#             println("The welfare function with values $(vals) has different minvar and leximax values:")
+#             println("Leximin is $(minvar_sol) and leximax is $(leximax_sol).")
+#         end
+#         next!(prog)
+#     end
+#     finish!(prog)
+# end
