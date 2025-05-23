@@ -67,8 +67,10 @@ min     sum(x_i^2 for i ∈ 1:n)
 s.t.    x ∈ core.
 
 Note: assumes that w(C) is defined for each C ⊆ 1:n!
+The parameter M is not used. It's only there to provide a consistent
+interface for optimisation models.
 """
-function minvar_model(n::Int, w)
+function minvar_model(n::Int, w; M=1)
     model, x = core_model(n, w)    
     @objective(model, Min, sum(x[i]^2 for i ∈ 1:n))
     return model, x
@@ -107,17 +109,12 @@ s.t.    x, y ∈ sorted_core, where y is x sorted in ascending order
 
 Note: assumes that w(C) is defined for each C ⊆ 1:n!
 """
-function leximin_model(n::Int, w)
-    # First we define a constant for the objective function, i.e., M = 1 / ε.
-    # This constant should probably depend on n and the magnitude of the values in w.
-    # For now, we set it to a fairly large number. TODO: improve.
-    M = 10
-
+function leximin_model(n::Int, w; M=2)
     # Construct model
     model, x, y, P = sorted_core_model(n, w)
     
     ## Define objective
-    @objective(model, Max, sum(M^(1+n-i) * y[i] for i ∈ 1:n))
+    @objective(model, Max, sum(M^(n-i) * y[i] for i ∈ 1:n))
     
     return model, x, y, P
 end
@@ -139,7 +136,7 @@ s.t.    x, y ∈ sorted_core, where y is x sorted in ascending order
 
 Note: assumes that w(C) is defined for each C ⊆ 1:n!
 """
-function leximax_model(n::Int, w; M=10)
+function leximax_model(n::Int, w; M=2)
     # Construct model
     model, x, y, P = sorted_core_model(n, w)
 
@@ -149,7 +146,7 @@ function leximax_model(n::Int, w; M=10)
 end
 
 
-function find_optimal_core_imputation(n::Int, w, objective::Symbol)
+function find_optimal_core_imputation(n::Int, w, objective::Symbol; M=2)
     # Define the model based on the objective specified
     if objective == :leximin
         model_fn = leximin_model
@@ -161,7 +158,7 @@ function find_optimal_core_imputation(n::Int, w, objective::Symbol)
         error("Unknown objective function: $(objective)")
     end
     # Create model and core imputation variables
-    model, x = model_fn(n, w)
+    model, x = model_fn(n, w; M=M)
     set_silent(model)
     set_optimizer_attribute(model, "OutputFlag", 0)
     # Solve model and return result

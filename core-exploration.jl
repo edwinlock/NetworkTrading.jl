@@ -113,13 +113,13 @@ function sweep_three_agent_functions(ub; atol=10e-4)
 end
 
 
-# # Try all possible welfare functions for 4 agents with values w(S) \leq ub.
+# Try all possible welfare functions for 4 agents with values w(S) \leq ub.
 function sweep_four_agent_functions(ub; atol=10e-4)
     n=4
     @info "Starting exploration of all possible welfare functions for 4 agents with values w(S) ≤ $ub."
     all_values = generate_all_four_agent_values(ub=ub)
     infeasible_instances = 0
-    feasible_instances = 0 
+    feasible_instances = 0
     @showprogress for w ∈ all_values
         @debug "Considering the welfare function values $w."
         w_fn = create_four_agent_welfare_fn(w)

@@ -30,12 +30,10 @@ end
 
 w = (0, 0, 0, 0, 1, 2, 2, 0, 0, 0, 2, 1, 2, 1, 3)
 # Leximin is [1.5, 0.5, 0.5, 0.5] and leximax is [1.0, 0.0, 1.0, 1.0].
-
-w = (0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 2, 2, 4, 4, 5)
 w_fn = create_four_agent_welfare_fn(w)
 
-leximin_sol = find_optimal_core_imputation(4, w_fn, :leximin)
-leximax_sol = find_optimal_core_imputation(4, w_fn, :leximax)
+leximin_sol = find_optimal_core_imputation(4, w_fn, :leximin, M=2)
+leximax_sol = find_optimal_core_imputation(4, w_fn, :leximax, M=2)
 
 # Check feasibility of the leximax solution for the sorted core model
 sortedmodel, x, y, P  = sorted_core_model(4, w_fn)
