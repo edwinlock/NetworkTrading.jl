@@ -90,7 +90,7 @@ function sorted_core_model(n::Int, w)
     @constraint(model, P * x .== y)
     # Ensure that y is sorted in ascending order
     @constraint(model, sorting[i ∈ 1:n-1], y[i] ≤ y[i+1])
-    return model, x, y
+    return model, x, y, P
 end
 
 
@@ -111,15 +111,15 @@ function leximin_model(n::Int, w)
     # First we define a constant for the objective function, i.e., M = 1 / ε.
     # This constant should probably depend on n and the magnitude of the values in w.
     # For now, we set it to a fairly large number. TODO: improve.
-    M = 500
+    M = 10
 
     # Construct model
-    model, x, y = sorted_core_model(n, w)
+    model, x, y, P = sorted_core_model(n, w)
     
     ## Define objective
     @objective(model, Max, sum(M^(1+n-i) * y[i] for i ∈ 1:n))
     
-    return model, x, y
+    return model, x, y, P
 end
 
 
@@ -127,32 +127,25 @@ end
 Create model to find a leximax core imputation of the cooperative
 market game defined by agents 1 to `n` and welfare function `w`.
 
+The constant M should probably depend on n and the magnitude of the values in w.
+For now, we set it to M=5 by default.
+
 Returns model and core imputation variables x.
 
 The convex optimisation program is:
 
-lexicographically smallest y
-s.t.    sum(x_i for i ∈ 1:n) == w(1:n)
-        sum(x_i for i ∈ C) ≥ w(C), for every C ⊆ 1:n.
-        x_i ≥ 0, for all i ∈ 1:n
-        P is a permutation matrix
-        y = P x
-        y is sorted in descending order
+reverse lexicographically smallest y
+s.t.    x, y ∈ sorted_core, where y is x sorted in ascending order
 
 Note: assumes that w(C) is defined for each C ⊆ 1:n!
 """
-function leximax_model(n::Int, w)
-    # First we define a constant for the objective function, i.e., M = 1 / ε.
-    # This constant should probably depend on n and the magnitude of the values in w.
-    # For now, we set it to a fairly large number. TODO: improve.
-    M = 500
-
+function leximax_model(n::Int, w; M=10)
     # Construct model
-    model, x, y = sorted_core_model(n, w)
+    model, x, y, P = sorted_core_model(n, w)
 
     # Change the objective to leximax
     @objective(model, Min, sum(M^i * y[i] for i ∈ 1:n))
-    return model, x, y
+    return model, x, y, P
 end
 
 

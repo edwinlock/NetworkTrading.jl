@@ -152,25 +152,6 @@ function sweep_four_agent_functions(ub; atol=10e-4)
 end
 
 
-
-
-### For testing a single instance of w vector
-# begin
-#     w = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 5)
-#     w_fn = create_four_agent_welfare_fn(w)
-#     # So w_fn([1,2,4]) = 5, w_fn([1,3,4]) = 5, w_fn([1,2,3,4]) = 5
-#     leximin_sol = find_optimal_core_imputation(4, w_fn, :leximin)
-#     leximax_sol = find_optimal_core_imputation(4, w_fn, :leximax)
-#     minmodel, minx, miny = leximin_model(4, w_fn)
-#     optimize!(minmodel)
-#     value.(miny)
-#     value.(minx)
-#     maxmodel, maxx, maxy = leximax_model(4, w_fn)
-#     optimize!(maxmodel)
-#     value.(maxy)
-#     value.(maxx)
-# end
-
 sweep_three_agent_functions(5)
 sweep_four_agent_functions(5)
 
