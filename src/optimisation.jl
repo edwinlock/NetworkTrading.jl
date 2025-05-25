@@ -1,8 +1,10 @@
 using Revise
 using JuMP, Gurobi
 using Combinatorics
+import MultiObjectiveAlgorithms as MOA
 
 const env = Gurobi.Env()
+Optimizer = () -> Gurobi.Optimizer(env)
 
 function generate_welfare_fn(market)
     n, m, Ω = market.n, market.m, market.Ω
@@ -67,12 +69,11 @@ min     sum(x_i^2 for i ∈ 1:n)
 s.t.    x ∈ core.
 
 Note: assumes that w(C) is defined for each C ⊆ 1:n!
-The parameter M is not used. It's only there to provide a consistent
-interface for optimisation models.
 """
-function minvar_model(n::Int, w; M=1)
+function minvar_model(n::Int, w)
     model, x = core_model(n, w)    
     @objective(model, Min, sum(x[i]^2 for i ∈ 1:n))
+    set_optimizer(model, Optimizer)
     return model, x
 end
 
@@ -81,7 +82,7 @@ function sorted_core_model(n::Int, w)
     model, x = core_model(n, w)
 
     # Define additional variables
-    @variable(model, y[1:n] ≥ 0)
+    @variable(model, y[1:n])
     @variable(model, P[1:n, 1:n], Bin)
 
     ## Define constraints
@@ -109,13 +110,19 @@ s.t.    x, y ∈ sorted_core, where y is x sorted in ascending order
 
 Note: assumes that w(C) is defined for each C ⊆ 1:n!
 """
-function leximin_model(n::Int, w; M=2)
+function leximin_model(n::Int, w)
     # Construct model
     model, x, y, P = sorted_core_model(n, w)
     
-    ## Define objective
-    @objective(model, Max, sum(M^(n-i) * y[i] for i ∈ 1:n))
+    # Set the multi-objective optimizer
+    set_optimizer(model, () -> MOA.Optimizer(Optimizer))
+    set_attribute(model, MOA.Algorithm(), MOA.Lexicographic())
+    set_attribute(model, MOA.LexicographicAllPermutations(), false)
+
+    # Define objective
+    @objective(model, Max, y)
     
+    # 
     return model, x, y, P
 end
 
@@ -123,9 +130,6 @@ end
 """
 Create model to find a leximax core imputation of the cooperative
 market game defined by agents 1 to `n` and welfare function `w`.
-
-The constant M should probably depend on n and the magnitude of the values in w.
-For now, we set it to M=5 by default.
 
 Returns model and core imputation variables x.
 
@@ -136,17 +140,25 @@ s.t.    x, y ∈ sorted_core, where y is x sorted in ascending order
 
 Note: assumes that w(C) is defined for each C ⊆ 1:n!
 """
-function leximax_model(n::Int, w; M=2)
+function leximax_model(n::Int, w)
     # Construct model
     model, x, y, P = sorted_core_model(n, w)
 
-    # Change the objective to leximax
-    @objective(model, Min, sum(M^i * y[i] for i ∈ 1:n))
+    # Set the multi-objective optimizer
+    set_optimizer(model, () -> MOA.Optimizer(Optimizer))
+    set_attribute(model, MOA.Algorithm(), MOA.Lexicographic())
+    set_attribute(model, MOA.LexicographicAllPermutations(), false)
+    for i ∈ eachindex(y)
+        set_attribute(model, MOA.ObjectiveRelativeTolerance(i), 10e-6)
+    end
+    # Set the objective to leximax
+    @objective(model, Min, reverse(y))
+
     return model, x, y, P
 end
 
 
-function find_optimal_core_imputation(n::Int, w, objective::Symbol; M=2)
+function find_optimal_core_imputation(n::Int, w, objective::Symbol)
     # Define the model based on the objective specified
     if objective == :leximin
         model_fn = leximin_model
@@ -158,7 +170,7 @@ function find_optimal_core_imputation(n::Int, w, objective::Symbol; M=2)
         error("Unknown objective function: $(objective)")
     end
     # Create model and core imputation variables
-    model, x = model_fn(n, w; M=M)
+    model, x = model_fn(n, w)
     set_silent(model)
     set_optimizer_attribute(model, "OutputFlag", 0)
     # Solve model and return result
