@@ -3,6 +3,7 @@ using NetworkTrading
 using Combinatorics
 using ProgressMeter
 using JuMP
+using DataFrames
 
 """
 Lots of code to explore leximin and leximax core outcome for arbitrary super-additive characteristic functions.
@@ -131,129 +132,35 @@ function sweep_agent_functions(n, ub; atol=10e-4)
 end
 
 # sweep_agent_functions(3,5)
-sweep_agent_functions(4,4)
-
-# ------------------------------ #
-# DON'T USE THE CODE BELOW YET   #
-
-# ### An iterator to generate all welfare functions w for sets S ⊆ 1:n with integer entries w(S) \in [0, ub].
-# struct WelfareFunctions
-#     n::Int  # ground set 1 to n
-#     all_sets::Vector{Vector{Int}}
-#     index::Dict{Vector{Int}, Int}  # maps each set to index in all_sets
-#     ub::Int
-# end
+# sweep_agent_functions(4,4)
 
 
-# function WelfareFunctions(n, ub)
-#     allsets = collect(powerset(1:n))
-#     numsets = 2^n
-#     index = Dict(allsets[i] => i for i ∈ 1:numsets)
-#     return WelfareFunctions(n, allsets, index, ub)
-# end
+function create_valuation_fn(values)
+    n = round(Int, log(2, length(values)))  # number of goods
+    d = Dict(Set(Φ) => i for (i, Φ) ∈ enumerate(powerset(1:n)))
+    function valuation(Φ::Set{Int})
+        @assert Φ ⊆ 1:n "Φ must be a subset of agents 1 to n."
+        return values[d[Φ]]
+    end
+    return valuation
+end
 
 
-# function Base.iterate(iter::WelfareFunctions, w::Vector{Int})
-#     numsets = 2^iter.n
-#     # Update the state w
-#     w = copy(w)
-#     i = numsets
-#     while i ≥ 1+iter.n+1
-#         # Find largest index j ∈ 1:i-1 for which w[j] is strictly less than ub
-#         while w[i] ≥ iter.ub
-#             i -= 1
-#         end
-#         i == 1+iter.n && return nothing  # iterator has reached the end
-#         exceeded_ub = false
-#         for k ∈ i+1:numsets
-#             S = iter.all_sets[k]
-#             lb = maximum_partition_value(iter, w, S)
-#             if lb > iter.ub
-#                 exceeded_ub = true
-#                 break
-#             else
-#                 w[k] = lb
-#             end
-#         end
-#         if exceeded_ub
-#             i -= 1
-#         else
-#             w[i] += 1
-#             continue
-#         end
-#     end
-#     # Construct the welfare function from state w
-#     w_fn = welfare_fn(iter, w)
-#     return w_fn, w
-# end
+function compute_all_substitutes(n, ub)
+    allsets = powerset(1:n)
+    df = DataFrame([string(S) => Int[] for S ∈ allsets]...)
+    numsets = 2^n
+    A = powerset(1:n)
+    @showprogress for values ∈ Iterators.product((0,), ntuple(_ -> 0:ub, numsets-1)...)
+        valuation = create_valuation_fn(values)
+        issubstitutes(valuation, A) && push!(df, values)
+    end
+    return df
+end
 
+num_valuations(n, ub) = (ub+1)^(2^n-1)
 
-# function Base.iterate(iter::WelfareFunctions)
-#     w = zeros(Int, 2^iter.n)
-#     w[end] = -1
-#     return iterate(iter::WelfareFunctions, w)
-# end
-
-
-# Base.IteratorSize(iter::WelfareFunctions) = Base.SizeUnknown()
-
-# function welfare_fn(iter, w)
-#     function w_fn(S::Vector{Int})
-#         @assert S ⊆ 1:iter.n  "Set must be contained in 1:$(iter.n)."
-#         length(S) ≤ 1 && return 0
-#         return w[iter.index[S]]
-#     end
-#     return w_fn
-# end
-
-
-
-# """
-# Compute the maximum value w(U) + w(V) over all non-trivial partitions U, V of S.
-# """
-# function maximum_partition_value(iter, w, S)
-#     result = 0
-#     for U ∈ powerset(S, 1, length(S)-1)
-#         for V ∈ powerset(S, 1, length(S)-1)
-#             if U ≠ V
-#                 result = max(result, partition_value(iter, w, U, V))
-#             end
-#         end
-#     end
-#     return result
-# end
-
-# """Compute the value w(U) + w(V) of sets U and V"""
-# partition_value(iter, w, U, V) = w[iter.index[U]] + w[iter.index[V]]
-
-# function sweep_agent_functions(n, ub; atol=10e-4)
-#     n = 4
-#     ub = 9
-#     dgts = 3
-#     @info "Starting exploration of all possible welfare functions for $(n) agents with values w(S) ≤ $(ub)."
-#     prog = ProgressUnknown(desc="Titles read:")
-#     for w ∈ WelfareFunctions(n, ub)
-#         vals = [ w(S) for S ∈ powerset(1:n) ]
-#         @debug "Considering the welfare function with values $(vals)."
-#         minvar_sol = round.(find_optimal_core_imputation(n, w, :min_variance), digits=dgts)
-#         leximin_sol = round.(find_optimal_core_imputation(n, w, :leximin), digits=dgts)
-#         leximax_sol = round.(find_optimal_core_imputation(n, w, :leximax), digits=dgts)
-#         @debug "minvar: $(minvar_sol)"
-#         @debug "leximin: $(leximin_sol)"
-#         @debug "leximax: $(leximax_sol)"
-#         if !(leximin_sol ≈ leximax_sol)
-#             println("The welfare function with values $(vals) has different leximin and leximax values:")
-#             println("Leximin is $(leximin_sol) and leximax is $(leximax_sol).")
-#         end
-#         if !(minvar_sol ≈ leximin_sol)
-#             println("The welfare function with values $(vals) has different minvar and leximin values:")
-#             println("Leximin is $(minvar_sol) and leximax is $(leximin_sol).")
-#         end
-#         if !(minvar_sol ≈ leximax_sol)
-#             println("The welfare function with values $(vals) has different minvar and leximax values:")
-#             println("Leximin is $(minvar_sol) and leximax is $(leximax_sol).")
-#         end
-#         next!(prog)
-#     end
-#     finish!(prog)
-# end
+n = 3
+ub = 11
+println("There are $(num_valuations(n, ub)) valuations for $n goods and ub=$ub.")
+all_substitutes_values = compute_all_substitutes(n, ub)

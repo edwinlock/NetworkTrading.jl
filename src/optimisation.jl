@@ -122,7 +122,6 @@ function leximin_model(n::Int, w)
     # Define objective
     @objective(model, Max, y)
     
-    # 
     return model, x, y, P
 end
 

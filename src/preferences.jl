@@ -237,3 +237,33 @@ function τ(Φ, i, Ω)
 
     return Set(ω for ω in eachindex(Ω) if λ(ω) == true)
 end
+
+
+
+"""
+Check whether valuation v with domain A is substitutes. Works by
+checking the M♮-concavity property:
+
+For every two subsets S, T of A, and element x ∈ T ∖ S, there exists
+y ∈ (S ∖ T) ∪ {0} such that f(S) + f(T) ≤ f(S + x - y) + f(T + y - x).
+
+Here 0 is the null element.
+
+Note: the domain A is a collection of subsets, e.g., powerset(1:n) for n goods.
+"""
+function issubstitutes(v, A)
+    @assert !isempty(A)  "Domain must contain at least one bundle."
+    for (Φvec, Ψvec) ∈ Iterators.product(A, A)
+        Φ, Ψ = Set(Φvec), Set(Ψvec)
+        for ψ ∈ setdiff(Ψ, Φ)
+            Ψless = setdiff(Ψ, ψ)
+            Φmore = Φ ∪ ψ
+            f(ϕ) = v(Ψless ∪ Φ) + v(setdiff(Φmore, ϕ))
+            if v(Ψ) + v(Φ) > max( v(Ψless) + v(Φmore), maximum(f, setdiff(Φ, Ψ), init=0) )
+                @debug "Valuation function failed the M♮-concavity property for Φ=$Φ, Ψ=$Ψ, and ψ=$ψ."
+                return false
+            end
+        end
+    end
+    return true
+end
