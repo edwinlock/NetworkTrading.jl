@@ -5,7 +5,7 @@ include("dynamic.jl")
 include("preferences.jl")
 include("plotting.jl")
 include("optimisation.jl")
-
+include("iterators.jl")
 
 export Market, DynamicState, seller, buyer, isseller, isbuyer, associated_trades, incoming_trades, outgoing_trades, χ, counterpart, associated_agents
 export BipartiteUnitMarket, RandomBipartiteUnitMarket, IntermediaryUnitMarket, RandomIntermediaryUnitMarket
@@ -19,6 +19,7 @@ export plotLIP, plotLIP!, draw_arrow!
 export generate_valuation, generate_demand
 export generate_welfare_fn, find_optimal_core_imputation
 export core_model, sorted_core_model, leximin_model, leximax_model, minvar_model, find_optimal_core_imputation, find_leximin_core_imputation, find_leximax_core_imputation, find_minvar_core_imputation
+export Powerset, length, eltype
 
 using PrecompileTools
 @compile_workload begin
