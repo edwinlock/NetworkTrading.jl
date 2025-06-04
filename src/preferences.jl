@@ -244,16 +244,16 @@ end
 Check whether valuation v with domain A is substitutes. Works by
 checking the M♮-concavity property:
 
-For every two subsets S, T of A, and element x ∈ T ∖ S, there exists
-y ∈ (S ∖ T) ∪ {0} such that f(S) + f(T) ≤ f(S + x - y) + f(T + y - x).
+For every two subsets S, T of A, and element x ∈ T ∖ S, we have
+f(S) + f(T) ≤ max_y f(S + x - y) + f(T + y - x), with the maximum
+taken over y ∈ (S ∖ T) ∪ {0}.
 
 Here 0 is the null element.
 
 Equivalently, v is *not* substitutes if there exist two subsets S, T of A
-and element x ∈ T ∖ S such that f(S) + f(T) > min_y f(S + x - y) + f(T + y - x),
+and element x ∈ T ∖ S such that f(S) + f(T) > max_y f(S + x - y) + f(T + y - x),
 where the minimum is taken over all y ∈ (S ∖ T) ∪ {0}. This is what the code
 checks.
-
 
 Note: the domain A is a collection of subsets, e.g., powerset(1:n) for n goods.
 """
@@ -265,7 +265,7 @@ function issubstitutes(v, A)
             Ψless = setdiff(Ψ, ψ)
             Φmore = Φ ∪ ψ
             f(ϕ) = v(Ψless ∪ Φ) + v(setdiff(Φmore, ϕ))
-            if v(Ψ) + v(Φ) > min( v(Ψless) + v(Φmore), minimum(f, setdiff(Φ, Ψ), init=0) )
+            if v(Ψ) + v(Φ) > max( v(Ψless) + v(Φmore), maximum(f, setdiff(Φ, Ψ), init=0) )
                 @debug "Valuation function failed the M♮-concavity property for Φ=$Φ, Ψ=$Ψ, and ψ=$ψ."
                 return false
             end
