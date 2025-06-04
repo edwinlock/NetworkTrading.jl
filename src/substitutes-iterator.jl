@@ -1,7 +1,3 @@
-"""
-
-"""
-
 struct SubstitutesValuations
     n::Int
     ub::Int
@@ -21,8 +17,9 @@ Base.eltype(iter::SubstitutesValuations) = Function
 
 An iterator for substitutes valuations.
 
-Example: Suppose we want to iterate over all substitutes valuations for an agent with
-buying trade 2 and selling trades 1 and 3. The valuation should be upper bounded by ub=5.
+Example: Suppose we want to iterate over all substitutes valuations with values <= 5
+for an agent with buying trade 2 and selling trades 1 and 3. The valuation should be
+upper bounded by ub=5.
 ```
     buyingtrades = Set([2])
     sellingtrades = Set([1,3])
@@ -40,10 +37,10 @@ function SubstitutesValuations(buyingtrades::Set{Int}, sellingtrades::Set{Int}, 
     alltrades = buyingtrades ∪ sellingtrades
     if n == 2 && ub ≤ 100
         raw_df = CSV.read("substitutes-2-100.csv", DataFrame)
-    elseif n == 3 && ub ≤ 10
-        raw_df = CSV.read("substitutes-3-10.csv", DataFrame)
+    elseif n == 3 && ub ≤ 15
+        raw_df = CSV.read("substitutes-3-15.csv", DataFrame)
     else
-        throw(error("Iterator not implemented for more than three trades or ub > 10 / 100."))
+        throw(error("Iterator not implemented for more than three trades or ub > 15 / 100."))
     end
     @assert nrow(raw_df) == 2^n "Loaded the wrong file."
     trade2good = Dict(ω => i for (i, ω) ∈ enumerate(alltrades))
