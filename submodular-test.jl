@@ -13,8 +13,8 @@ function create_valuation_fn(values)
     return valuation
 end
 
-n = 3
-ub = 5
+n = 2
+ub = 10
 
 iter = SubmodularFunctions(n, ub)
 df = listall(iter)
@@ -28,3 +28,4 @@ A = powerset(1:n)
         push!(substitutes, values)
     end
 end
+length(substitutes)
