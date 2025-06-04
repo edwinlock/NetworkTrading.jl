@@ -249,18 +249,45 @@ y ∈ (S ∖ T) ∪ {0} such that f(S) + f(T) ≤ f(S + x - y) + f(T + y - x).
 
 Here 0 is the null element.
 
+Equivalently, v is *not* substitutes if there exist two subsets S, T of A
+and element x ∈ T ∖ S such that f(S) + f(T) > min_y f(S + x - y) + f(T + y - x),
+where the minimum is taken over all y ∈ (S ∖ T) ∪ {0}. This is what the code
+checks.
+
+
 Note: the domain A is a collection of subsets, e.g., powerset(1:n) for n goods.
 """
 function issubstitutes(v, A)
-    @assert !isempty(A)  "Domain must contain at least one bundle."
+    @assert !isempty(A) "Domain must contain at least one bundle."
     for (Φvec, Ψvec) ∈ Iterators.product(A, A)
         Φ, Ψ = Set(Φvec), Set(Ψvec)
         for ψ ∈ setdiff(Ψ, Φ)
             Ψless = setdiff(Ψ, ψ)
             Φmore = Φ ∪ ψ
             f(ϕ) = v(Ψless ∪ Φ) + v(setdiff(Φmore, ϕ))
-            if v(Ψ) + v(Φ) > max( v(Ψless) + v(Φmore), maximum(f, setdiff(Φ, Ψ), init=0) )
+            if v(Ψ) + v(Φ) > min( v(Ψless) + v(Φmore), minimum(f, setdiff(Φ, Ψ), init=0) )
                 @debug "Valuation function failed the M♮-concavity property for Φ=$Φ, Ψ=$Ψ, and ψ=$ψ."
+                return false
+            end
+        end
+    end
+    return true
+end
+
+"""
+    issubmodular(v, A)
+
+Checks whether function v with domain A is submodular. 
+
+Uses definition 3 of submodularity in https://en.wikipedia.org/wiki/Submodular_set_function.
+
+"""
+function issubmodular(v, A)
+    for Φvec ∈ A
+        Φ = Set(Φvec)
+        for (ω, χ) ∈ Iterators.combination(Φ, 2)
+            if v(Φ) > f(setdiff(Φ, ω)) + f(setdiff(Φ, χ)) - f(setdiff(Φ, ω, χ))
+                @debug "Valuation function failed the submodularity property for Φ=$Φ, ω=$ω, and χ=$χ."
                 return false
             end
         end

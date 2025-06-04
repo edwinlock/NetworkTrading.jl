@@ -4,6 +4,7 @@ using Combinatorics
 using ProgressMeter
 using JuMP
 using DataFrames
+using BenchmarkTools
 
 """
 Lots of code to explore leximin and leximax core outcome for arbitrary super-additive characteristic functions.
@@ -146,12 +147,15 @@ function create_valuation_fn(values)
 end
 
 
-function compute_all_substitutes(n, ub)
-    allsets = powerset(1:n)
-    df = DataFrame([string(S) => Int[] for S ∈ allsets]...)
-    numsets = 2^n
-    A = powerset(1:n)
-    @showprogress for values ∈ Iterators.product((0,), ntuple(_ -> 0:ub, numsets-1)...)
+function compute_all_substitutes(n, ub; normalize=true)
+    A = Powerset(n)
+    df = DataFrame([string(S) => Int[] for S ∈ A]...)
+    if normalize
+        iter = Iterators.product((0,), ntuple(_ -> 0:ub, 2^n-1)...)
+    else
+        iter = Iterators.product(ntuple(_ -> 0:ub, 2^n)...)
+    end
+    @showprogress for values ∈ iter
         valuation = create_valuation_fn(values)
         issubstitutes(valuation, A) && push!(df, values)
     end
@@ -160,7 +164,28 @@ end
 
 num_valuations(n, ub) = (ub+1)^(2^n-1)
 
-n = 3
-ub = 11
+n = 2
+ub = 10
 println("There are $(num_valuations(n, ub)) valuations for $n goods and ub=$ub.")
-all_substitutes_values = compute_all_substitutes(n, ub)
+@time df2_normalized = compute_all_substitutes(n, ub)
+
+function merge_vectors(n, lowerdf, otherdf)
+    A = Powerset(n)
+    df = DataFrame([string(S) => Int[] for S ∈ A]...)
+    @showprogress for (i,j) ∈ Iterators.product(1:nrow(lowerdf), 1:nrow(otherdf))
+        v = collect(lowerdf[i, :])
+        w = collect(otherdf[j, :])
+        values = [v; w]
+        valuation = create_valuation_fn(values)
+        issubstitutes(valuation, A) && push!(df, values)
+    end
+    return df
+end
+
+
+n = 3
+ub = 10
+df2_normalized = compute_all_substitutes(n, ub; normalize=true)
+df2_not_normalized = compute_all_substitutes(n, ub; normalize=false)
+@time df3 = compute_all_substitutes(n+1, ub)
+@time df3_alt = merge_vectors(n+1, df2_normalized, df2_not_normalized)
