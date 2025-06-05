@@ -1,3 +1,6 @@
+import CSV
+import DataFrames
+
 struct SubstitutesValuations
     n::Int
     ub::Int
@@ -42,7 +45,7 @@ function SubstitutesValuations(buyingtrades::Set{Int}, sellingtrades::Set{Int}, 
     else
         throw(error("Iterator not implemented for more than three trades or ub > 15 / 100."))
     end
-    @assert nrow(raw_df) == 2^n "Loaded the wrong file."
+    @assert ncol(raw_df) == 2^n "Loaded the wrong file."
     trade2good = Dict(ω => i for (i, ω) ∈ enumerate(alltrades))
     allgoods = Set.(powerset(1:n))
     idx = Dict(Ψ => i for (i, Ψ) ∈ enumerate(allgoods))
