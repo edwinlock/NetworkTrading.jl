@@ -6,8 +6,6 @@ struct AdditiveValuations
     sellingtrades::Set{Int}
     alltrades::Set{Int}
     trade2good::Dict{Int, Int}
-    # idx::Dict{Set{Int}, Int}  # stores index of each set of *goods* in value vector collect(powerset(1:n))
-    # df::DataFrame
 end
 
 Base.length(iter::AdditiveValuations) = (1+iter.ub)^iter.n
@@ -53,9 +51,6 @@ function Base.iterate(iter::AdditiveValuations, state=0)
         Ψ = (Φ ∩ iter.buyingtrades) ∪ setdiff(iter.sellingtrades, Φ)
         # Map trades to goods
         Θ = Set(iter.trade2good[ω] for ω ∈ Ψ)
-        println("Φ = $Φ")
-        println("Ψ = $Ψ")
-        println("Θ = $Θ")
         # Get the index of Θ in the valuation vector and return value
         return sum(additive_values[ω] for ω ∈ Θ)
     end
