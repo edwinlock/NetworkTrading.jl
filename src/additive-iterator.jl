@@ -14,7 +14,7 @@ Base.eltype(iter::AdditiveValuations) = Function
 """
     AdditiveValuations(buyingtrades::Set{Int}, sellingtrades::Set{Int}, ub::Int)
 
-An iterator for substitutes valuations.
+An iterator for additive valuations.
 
 Example: Suppose we want to iterate over all additive valuations with values <= 5
 for an agent with buying trade 2 and selling trades 1 and 3. The valuation should be
