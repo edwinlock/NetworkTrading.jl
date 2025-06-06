@@ -1,0 +1,63 @@
+
+struct AdditiveValuations
+    n::Int
+    ub::Int
+    buyingtrades::Set{Int}
+    sellingtrades::Set{Int}
+    alltrades::Set{Int}
+    trade2good::Dict{Int, Int}
+    # idx::Dict{Set{Int}, Int}  # stores index of each set of *goods* in value vector collect(powerset(1:n))
+    # df::DataFrame
+end
+
+Base.length(iter::AdditiveValuations) = (1+iter.ub)^iter.n
+Base.eltype(iter::AdditiveValuations) = Function
+
+"""
+    AdditiveValuations(buyingtrades::Set{Int}, sellingtrades::Set{Int}, ub::Int)
+
+An iterator for substitutes valuations.
+
+Example: Suppose we want to iterate over all additive valuations with values <= 5
+for an agent with buying trade 2 and selling trades 1 and 3. The valuation should be
+upper bounded by ub=5.
+```
+    buyingtrades = Set([2])
+    sellingtrades = Set([1,3])
+    ub = 5
+    iter = AdditiveValuations(buyingtrades, sellingtrades, ub)
+    for valuation ∈ iter:
+        # Do something with the valuation
+    end
+```
+
+"""
+function AdditiveValuations(buyingtrades::Set{Int}, sellingtrades::Set{Int}, ub::Int)
+    @assert length(buyingtrades ∩ sellingtrades) == 0 "Buying and selling trades must be disjoint."
+    n = length(buyingtrades) + length(sellingtrades)
+    alltrades = buyingtrades ∪ sellingtrades
+    trade2good = Dict(ω => i for (i, ω) ∈ enumerate(alltrades))
+    return AdditiveValuations(n, ub, buyingtrades, sellingtrades, alltrades, trade2good)
+end
+
+function Base.iterate(iter::AdditiveValuations, state=0)
+    # Deal with terminating state
+    state ≥ length(iter) && return nothing
+    # Compute additive values
+    additive_values = digits(state, base=iter.ub+1, pad=iter.n)
+    println(additive_values)
+    # Create and return valuation function
+    function valuation(Φ::Set{Int})
+        @assert Φ ⊆ iter.alltrades "Φ must be a valid subset of trades."
+        # Convert trade set to object set
+        Ψ = (Φ ∩ iter.buyingtrades) ∪ setdiff(iter.sellingtrades, Φ)
+        # Map trades to goods
+        Θ = Set(iter.trade2good[ω] for ω ∈ Ψ)
+        println("Φ = $Φ")
+        println("Ψ = $Ψ")
+        println("Θ = $Θ")
+        # Get the index of Θ in the valuation vector and return value
+        return sum(additive_values[ω] for ω ∈ Θ)
+    end
+    return valuation, state+1
+end
