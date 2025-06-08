@@ -43,7 +43,6 @@ function Base.iterate(iter::AdditiveValuations, state=0)
     state ≥ length(iter) && return nothing
     # Compute additive values
     additive_values = digits(state, base=iter.ub+1, pad=iter.n)
-    println(additive_values)
     # Create and return valuation function
     function valuation(Φ::Set{Int})
         @assert Φ ⊆ iter.alltrades "Φ must be a valid subset of trades."
@@ -51,7 +50,7 @@ function Base.iterate(iter::AdditiveValuations, state=0)
         Ψ = (Φ ∩ iter.buyingtrades) ∪ setdiff(iter.sellingtrades, Φ)
         # Map trades to goods
         Θ = Set(iter.trade2good[ω] for ω ∈ Ψ)
-        # Get the index of Θ in the valuation vector and return value
+        # Compute and return the value of Θ
         return sum(additive_values[ω] for ω ∈ Θ)
     end
     return valuation, state+1

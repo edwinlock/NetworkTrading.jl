@@ -26,14 +26,12 @@ function generate_welfare_fn(market)
             welfare += market.valuation[i](Φ_i)
         end
         d[C] = max(d[C], welfare)
-        # println("Φ: $Φ, C: $C, welfare: $welfare")
     end
     # Percolate the maximum values upwards in the lattice of coalitions.
     for C ∈ nontrivial_coalitions
         d[C] = max(d[C], maximum(d[setdiff(C, ω)] for ω ∈ C; init=0))
     end
-    # Create a function that takes a vector of agents and returns the welfare
-    # for that coalition.
+    # Create function taking a coalition of agents and returning its welfare
     function welfare(C::Vector{Int})
         @assert C ⊆ 1:n "C must be a subset of agents 1 to n."
         return d[Set(C)]
@@ -43,7 +41,10 @@ end
 
 
 """
+    core_model(n::Int, w::Function)
+
 Create model that represents the core. The core is defined by constraints:
+
 <no objective>
     sum(x_i for i ∈ 1:n) == w(1:n)
     sum(x_i for i ∈ C) ≥ w(C), for every C ⊆ 1:n.
@@ -51,10 +52,9 @@ Create model that represents the core. The core is defined by constraints:
 Note: assumes that w(C) is defined for each C ⊆ 1:n! The model lacks an objective,
 because it only defines the feasible region!
 """
-function core_model(n::Int, w)
+function core_model(n::Int, w::Function)
     GC = collect(1:n)
     proper_subsets = collect.(powerset(1:n, 1, n-1))
-    #model = Model(() -> Optimizer(GRB_ENV[]))
     model = Model(Optimizer)
     @variable(model, x[1:n])
     @constraint(model, eq, sum(x[GC]) == w(GC))
@@ -64,6 +64,8 @@ end
 
 
 """
+    minvar_model(n::Int, w::Function)
+
 Create model to find a minimum variance core imputation
 of the cooperative market game defined by agents 1 to `n` and
 welfare function `w`.
@@ -84,6 +86,11 @@ function minvar_model(n::Int, w)
 end
 
 
+"""
+    sorted_core_model(n::Int, w)
+
+TBW
+"""
 function sorted_core_model(n::Int, w)
     model, x = core_model(n, w)
 
@@ -104,6 +111,8 @@ end
 
 
 """
+    leximin_model(n::Int, w::Function)
+
 Create model to find a leximin core imputation of the cooperative
 market game defined by agents 1 to `n` and welfare function `w`.
 
@@ -133,6 +142,8 @@ end
 
 
 """
+    leximax_model(n::Int, w::Function)
+
 Create model to find a leximax core imputation of the cooperative
 market game defined by agents 1 to `n` and welfare function `w`.
 
@@ -163,7 +174,12 @@ function leximax_model(n::Int, w)
 end
 
 
-function find_optimal_core_imputation(n::Int, w, objective::Symbol)
+"""
+    find_optimal_core_imputation(n::Int, w::Function, objective::Symbol)
+
+TBW
+"""
+function find_optimal_core_imputation(n::Int, w::Function, objective::Symbol)
     # Define the model based on the objective specified
     if objective == :leximin
         model_fn = leximin_model
