@@ -75,7 +75,7 @@ for (idx, val_tuple) in enumerate(all_valuations)
     # Generate welfare function
     local welfare = generate_welfare_fn(market)
     # Compute solutions
-    println("Valuation config $idx:", collect(getindex.(val_tuple, 1)))
+    #println("Valuation config $idx:", collect(getindex.(val_tuple, 1)))
     local minvar_sol = find_optimal_core_imputation(market.n, welfare, :min_variance)
     local leximin_sol = find_optimal_core_imputation(market.n, welfare, :leximin)
     local leximax_sol = find_optimal_core_imputation(market.n, welfare, :leximax)
@@ -84,6 +84,9 @@ for (idx, val_tuple) in enumerate(all_valuations)
 
     # Check if any pair of solutions differs by more than epsilon
     function any_pair_differs(sols, epsilon)
+        if any(sol === nothing for sol in sols)
+            return false  # Can't compare Nothing values
+        end
         for i in 1:length(sols)-1
             for j in i+1:length(sols)
                 if !isapprox(sols[i], sols[j]; atol=epsilon)

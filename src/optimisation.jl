@@ -3,8 +3,13 @@ using JuMP, Gurobi
 using Combinatorics
 import MultiObjectiveAlgorithms as MOA
 
-const env = Gurobi.Env()
-Optimizer = () -> Gurobi.Optimizer(env)
+const GRB_ENV = Ref{Gurobi.Env}()
+function __init__()
+    GRB_ENV[] = Gurobi.Env()
+    return
+end
+Optimizer = () -> Gurobi.Optimizer(GRB_ENV[])
+
 
 function generate_welfare_fn(market)
     n, m, Ω = market.n, market.m, market.Ω
@@ -49,7 +54,8 @@ because it only defines the feasible region!
 function core_model(n::Int, w)
     GC = collect(1:n)
     proper_subsets = collect.(powerset(1:n, 1, n-1))
-    model = Model(() -> Gurobi.Optimizer(env))
+    #model = Model(() -> Optimizer(GRB_ENV[]))
+    model = Model(Optimizer)
     @variable(model, x[1:n])
     @constraint(model, eq, sum(x[GC]) == w(GC))
     @constraint(model, ineq[C ∈ proper_subsets], sum(x[C]) ≥ w(C))
