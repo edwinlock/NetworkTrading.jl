@@ -196,7 +196,7 @@ function essentialagents(market, welfare_fn; atol=0.00001)
     grand_coalition = collect(1:market.n)
     welfare = welfare_fn(grand_coalition)
     welfares_without = [welfare_fn(setdiff(grand_coalition, i)) for i ∈ grand_coalition]
-    essential_agents = [i for i ∈ 1:n if welfare - welfares_without[i] ≥ atol]
+    essential_agents = [i for i ∈ 1:market.n if welfare - welfares_without[i] ≥ atol]
     return essential_agents
 end
 
