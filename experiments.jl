@@ -72,6 +72,19 @@ end
 
 
 """
+Print a valuation function for given trades.
+"""
+function print_fn(f, trades)
+    println("Printing the value of function.")
+    Ωi = powerset(trades)
+    for Φvec ∈ Ωi
+        Φ = Set(Φvec)
+        println("The value for bundle $Φ is $f(Φ).")
+    end
+end
+
+
+"""
 This function checks if the minimum variance, leximin, and leximax solutions
 differ for a given market configuration.
 """
