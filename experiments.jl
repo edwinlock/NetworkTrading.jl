@@ -91,6 +91,19 @@ end
 
 
 """
+Print a valuation function for given trades.
+"""
+function print_welfare_fn(w, trades)
+    trades = collect(trades)
+    Ωi = powerset(trades)
+    for Φvec ∈ Ωi
+        println("$(Φvec) => $(w(Φvec))")
+    end
+    return nothing
+end
+
+
+"""
 This function checks if the minimum variance, leximin, and leximax solutions
 differ for a given market configuration.
 """
@@ -138,6 +151,7 @@ end
 
 
 function diagnose(market)
+    welfare_fn = generate_welfare_fn(found)
     println("Market with $(market.n) agents and $(market.m) trades.")
     println("Market network is given by Ω = $(Ω).")
     println("Now printing valuations.")
@@ -146,6 +160,8 @@ function diagnose(market)
         print_valuation(v, associated_trades(i, found.Ω))
         println()
     end
+    println("Welfare function:")
+    print_welfare_fn(welfare_fn, 1:found.m)
 end
 
 # Example:
@@ -157,7 +173,10 @@ AgentIterators = [SubstitutesValuations for _ in 1:n]
 Ω = [(1,2), (1,3), (3,2)]
 
 found = explore_network(Ω, AgentIterators, 2, nonemptycore)
+
 diagnose(found)
+
+v = found.valuation[3]
 
 
 # explore_network(Ω, AgentIterators, 2, minvar_leximin_leximax_equal)

@@ -1,5 +1,5 @@
-import CSV
-import DataFrames
+using CSV
+using DataFrames
 
 struct SubstitutesValuations
     n::Int
@@ -59,14 +59,21 @@ function Base.iterate(iter::SubstitutesValuations, state=1)
     # Retrieve current row from df
     value_vector = collect(iter.df[state, :])
     # Create and return valuation function
+    # First we need to determine the value of the empty trade bundle.
+    # The empty trade bundle maps to the object bundle containing the selling trades
+    # We map the selling trades to goods
+    Θ = Set(iter.trade2good[ω] for ω ∈ iter.sellingtrades)
+    # And then we compute the value of the empty trade bundle
+    emptybundlevalue = value_vector[iter.idx[Θ]]
     function valuation(Φ::Set{Int})
         @assert Φ ⊆ iter.alltrades "Φ must be a valid subset of trades."
         # Convert trade set to object set
         Ψ = (Φ ∩ iter.buyingtrades) ∪ setdiff(iter.sellingtrades, Φ)
         # Map trades to goods
         Θ = Set(iter.trade2good[ω] for ω ∈ Ψ)
-        # Get the index of Θ in the valuation vector and return value
-        return value_vector[iter.idx[Θ]]
+        # Get the index of Θ in the valuation vector and return value,
+        # taking care to normalise by subtracting emptybundlevalue
+        return value_vector[iter.idx[Θ]] - emptybundlevalue
     end
     return valuation, state+1
 end

@@ -5,11 +5,10 @@ include("dynamic.jl")
 include("preferences.jl")
 include("plotting.jl")
 include("optimisation.jl")
-include("iterators.jl")
-include("submodular-iterator.jl")
-include("substitutes-iterator.jl")
-include("additive-iterator.jl")
-include("all-valuations-iterator.jl")
+include("iterators/submodular-iterator.jl")
+include("iterators/substitutes-iterator.jl")
+include("iterators/additive-iterator.jl")
+include("iterators/all-valuations-iterator.jl")
 
 export Market, DynamicState, seller, buyer, isseller, isbuyer, associated_trades, incoming_trades, outgoing_trades, χ, counterpart, associated_agents
 export BipartiteUnitMarket, RandomBipartiteUnitMarket, IntermediaryUnitMarket, RandomIntermediaryUnitMarket
