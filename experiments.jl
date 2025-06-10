@@ -195,35 +195,31 @@ zeroleximin(market; atol=0.001) = zeroleximin(market, generate_welfare_fn(market
 # println("Unique graphs: ", graphs)
 
 
-# Example 1:
-n=3
-ub = 2
-AgentIterators = [SubstitutesValuations for _ in 1:n]
-Ω = [(1,2), (1,3), (3,2)]
-found = nothing
-found = explore_network(Ω, AgentIterators, ub, nonemptycore)
-isnothing(found) || diagnose(found)
+# # Example 1:
+# ub = 2
+# AgentIterators = [SubstitutesValuations for _ in 1:n]
+# Ω = [(1,2), (1,3), (3,2)]
+# found = nothing
+# found = explore_network(Ω, AgentIterators, ub, nonemptycore)
+# isnothing(found) || diagnose(found)
 
-# Example 2:
-n=3
-ub=1
-AgentIterators = [AllValuations for _ in 1:n]
-Ω = [(1,2), (1,3), (3,2)]
-found = nothing
-found = explore_network(Ω, AgentIterators, ub, nonemptycore);
-isnothing(found) || diagnose(found)
+# # Example 2:
+# ub=1
+# AgentIterators = [AllValuations for _ in 1:n]
+# Ω = [(1,2), (1,3), (3,2)]
+# found = nothing
+# found = explore_network(Ω, AgentIterators, ub, nonemptycore);
+# isnothing(found) || diagnose(found)
 
-# Example 3:
-n=3
-ub = 5
-AgentIterators = [SubstitutesValuations, AllValuations]
-Ω = [(1,2), (2,1)]
-found = nothing
-found = explore_network(Ω, AgentIterators, ub, nonemptycore);
-isnothing(found) || diagnose(found)
+# # Example 3:
+# ub = 5
+# AgentIterators = [SubstitutesValuations, AllValuations]
+# Ω = [(1,2), (2,1)]
+# found = nothing
+# found = explore_network(Ω, AgentIterators, ub, nonemptycore);
+# isnothing(found) || diagnose(found)
 
-# Example 4:
-n=3
+# # Example 4: In the leximin soluttion, do all agents receive posistive utility?
 ub = 2
 AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
 Ω = [(1,2), (1,3), (3,2)]
@@ -231,11 +227,13 @@ found = nothing
 found = explore_network(Ω, AgentIterators, ub, positiveleximin);
 isnothing(found) || diagnose(found)
 
-# Example 5:
-n=3
-ub = 2
-AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
-Ω = [(1,2), (1,3), (3,2)]
-found = nothing
-found = explore_network(Ω, AgentIterators, ub, leximin_vs_max);
-isnothing(found) || diagnose(found)
+# # Example 5:
+# ub = 2
+# AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
+# Ω = [(1,2), (1,3), (3,2)]
+# found = nothing
+# found = explore_network(Ω, AgentIterators, ub, leximin_vs_max);
+# isnothing(found) || diagnose(found)
+
+
+# Questions: are there substitutes markets where all agents are inessential?
