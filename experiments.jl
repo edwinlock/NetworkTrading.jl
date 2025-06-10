@@ -164,6 +164,15 @@ function diagnose(market)
     print_welfare_fn(welfare_fn, 1:found.m)
 end
 
+
+# explore_network(Ω, AgentIterators, 2, minvar_leximin_leximax_equal)
+
+# i = 1
+# iter = SubstitutesValuations(incoming_trades(i,Ω), outgoing_trades(i,Ω), 2)
+# v = first(iter)
+# print_valuation(v, associated_trades(i, Ω))
+
+
 # Example:
 n=3
 graphs = generate_digraphs(n)
@@ -173,16 +182,53 @@ AgentIterators = [SubstitutesValuations for _ in 1:n]
 Ω = [(1,2), (1,3), (3,2)]
 
 found = explore_network(Ω, AgentIterators, 2, nonemptycore)
-
-diagnose(found)
-
-v = found.valuation[3]
+isnothing(found) || diagnose(found)
 
 
-# explore_network(Ω, AgentIterators, 2, minvar_leximin_leximax_equal)
+# Example 2:
+n=3
+AgentIterators = [AllValuations for _ in 1:n]
+Ω = [(1,2), (1,3), (3,2)]
 
+found = explore_network(Ω, AgentIterators, 2, nonemptycore)
+isnothing(found) || diagnose(found)
 
-# i = 1
-# iter = SubstitutesValuations(incoming_trades(i,Ω), outgoing_trades(i,Ω), 2)
-# v = first(iter)
-# print_valuation(v, associated_trades(i, Ω))
+# Market with 3 agents and 3 trades.
+# Market network is given by Ω = [(1, 2), (1, 3), (3, 2)].
+# Now printing valuations.
+# For agent 1:
+# Int64[] => 0
+# [1] => 1
+# [2] => 0
+# [1, 2] => 0
+
+# For agent 2:
+# Int64[] => 0
+# [1] => 0
+# [3] => 1
+# [1, 3] => 0
+
+# For agent 3:
+# Int64[] => 0
+# [2] => 1
+# [3] => 0
+# [2, 3] => 0
+
+# Welfare function:
+# Int64[] => 0
+# [1] => 0
+# [2] => 0
+# [3] => 0
+# [1, 2] => 1
+# [1, 3] => 1
+# [2, 3] => 1
+# [1, 2, 3] => 1
+
+# Example 3:
+n=3
+graphs = generate_digraphs(n)
+AgentIterators = [AdditiveValuations, AdditiveValuations, AllValuations]
+Ω = [(1,2), (1,3), (3,2)]
+
+found = explore_network(Ω, AgentIterators, 2, nonemptycore)
+isnothing(found) || diagnose(found)
