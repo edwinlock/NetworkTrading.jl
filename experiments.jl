@@ -4,6 +4,7 @@ using Combinatorics
 using Graphs
 using NautyGraphs
 using IterTools
+using ProgressMeter
 
 # Generate all possible directed graphs with n nodes
 function generate_digraphs(n::Int)
@@ -49,38 +50,43 @@ function generate_all_valuations(trades::Vector{Tuple{Int, Int}}, n::Int, vL::In
     return all_valuations
 end
 
+
 """
 Given a fixed network specified by Ω, agents 1 to n, and a dictionary
 mapping each agent to a ValuationIterator, iterate over all possible valuations
 for all agents and create the corresponding market.
 """
-function explore_network(Ω, n, AgentIterators, ub, action_function)
-    @assert length(AgentIterators) == n "Number of agents must agree with length of AgentIterators."
+function explore_network(Ω, AgentIterators, ub, action_function)
+    n = length(AgentIterators)
     buyingtrades = [incoming_trades(i, Ω) for i ∈ 1:n] 
     sellingtrades = [outgoing_trades(i, Ω) for i ∈ 1:n]
     agentiters = [AgentIterators[i](buyingtrades[i], sellingtrades[i], ub) for i ∈ 1:n]
-    for valuations ∈ Iterators.product(agentiters...)
+    @info "Finished constructing iterators, starting the search."
+    @showprogress for valuations ∈ Iterators.product(agentiters...)
         # Create demand functions for each agent
         local demand = [generate_demand(i, Ω, valuations[i]) for i in 1:n]
         # Create the market
         local market = Market(Ω, collect(valuations), demand)
         # Generate welfare function
         local welfare = generate_welfare_fn(market)
-        action_function(market, welfare) || break
+        action_function(market, welfare) || return market
     end
+    return nothing
 end
 
 
 """
 Print a valuation function for given trades.
 """
-function print_fn(f, trades)
-    println("Printing the value of function.")
+function print_valuation(v, trades)
+    trades = collect(trades)
+    sort!(trades)
     Ωi = powerset(trades)
     for Φvec ∈ Ωi
         Φ = Set(Φvec)
-        println("The value for bundle $Φ is $f(Φ).")
+        println("$(Φvec) => $(v(Φ))")
     end
+    return nothing
 end
 
 
@@ -114,18 +120,50 @@ function minvar_leximin_leximax_equal(market, welfare)
     return true
 end
 
+
+"""
+This function returns true iff the core of the market is nonempty.
+"""
+function nonemptycore(market, welfare)
+    leximin_sol = find_optimal_core_imputation(market.n, welfare, :leximin)
+    isnothing(leximin_sol) && return false
+    return true
+end
+
+
 # TODO: add some action functions according to section 7
 # TODO: create function to print if the action function stops the exploration
 # TODO: create loop over all graphs
 # TODO: write functions "isdemanded" and "isCE"
+
+
+function diagnose(market)
+    println("Market with $(market.n) agents and $(market.m) trades.")
+    println("Market network is given by Ω = $(Ω).")
+    println("Now printing valuations.")
+    for (i, v) in enumerate(found.valuation)
+        println("For agent $i:")
+        print_valuation(v, associated_trades(i, found.Ω))
+        println()
+    end
+end
 
 # Example:
 n=3
 graphs = generate_digraphs(n)
 println("Number of non-isomorphic graphs for n=$n: ", length(graphs))
 println("Unique graphs: ", graphs)
-agentiterators = [SubstitutesValuations for _ in 1:n]
+AgentIterators = [SubstitutesValuations for _ in 1:n]
 Ω = [(1,2), (1,3), (3,2)]
+
+found = explore_network(Ω, AgentIterators, 2, nonemptycore)
+diagnose(found)
+
+
+# explore_network(Ω, AgentIterators, 2, minvar_leximin_leximax_equal)
+
+
 # i = 1
 # iter = SubstitutesValuations(incoming_trades(i,Ω), outgoing_trades(i,Ω), 2)
-explore_network(Ω, n, agentiterators, 2, minvar_leximin_leximax_equal)
+# v = first(iter)
+# print_valuation(v, associated_trades(i, Ω))
