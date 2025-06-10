@@ -188,66 +188,37 @@ zeroleximin(market; atol=0.001) = zeroleximin(market, generate_welfare_fn(market
 # TODO: create loop over all graphs
 # TODO: write functions "isdemanded" and "isCE"
 
+# Example 0:
+# Generate all non-isomorphic directed graphs with 3 nodes
+# graphs = generate_digraphs(n)
+# println("Number of non-isomorphic graphs for n=$n: ", length(graphs))
+# println("Unique graphs: ", graphs)
+
+
 # Example 1:
 n=3
-graphs = generate_digraphs(n)
-println("Number of non-isomorphic graphs for n=$n: ", length(graphs))
-println("Unique graphs: ", graphs)
+ub = 2
 AgentIterators = [SubstitutesValuations for _ in 1:n]
 Ω = [(1,2), (1,3), (3,2)]
-
-found = explore_network(Ω, AgentIterators, 2, nonemptycore)
+found = nothing
+found = explore_network(Ω, AgentIterators, ub, nonemptycore)
 isnothing(found) || diagnose(found)
-
 
 # Example 2:
 n=3
 ub=1
 AgentIterators = [AllValuations for _ in 1:n]
 Ω = [(1,2), (1,3), (3,2)]
-
+found = nothing
 found = explore_network(Ω, AgentIterators, ub, nonemptycore);
 isnothing(found) || diagnose(found)
-
-# Market with 3 agents and 3 trades.
-# Market network is given by Ω = [(1, 2), (1, 3), (3, 2)].
-# Now printing valuations.
-# For agent 1:
-# Int64[] => 0
-# [1] => 1
-# [2] => 0
-# [1, 2] => 0
-
-# For agent 2:
-# Int64[] => 0
-# [1] => 0
-# [3] => 1
-# [1, 3] => 0
-
-# For agent 3:
-# buying trade is 2
-# selling trade is 3
-# Int64[] => 0          [3]   => 0
-# [2] => 1              [2,3] => 1
-# [3] => 0              []    => 0
-# [2, 3] => 0           [2]   => 0
-
-# Welfare function:
-# Int64[] => 0
-# [1] => 0
-# [2] => 0
-# [3] => 0
-# [1, 2] => 1
-# [1, 3] => 1
-# [2, 3] => 1
-# [1, 2, 3] => 1
 
 # Example 3:
 n=3
 ub = 5
 AgentIterators = [SubstitutesValuations, AllValuations]
 Ω = [(1,2), (2,1)]
-
+found = nothing
 found = explore_network(Ω, AgentIterators, ub, nonemptycore);
 isnothing(found) || diagnose(found)
 
