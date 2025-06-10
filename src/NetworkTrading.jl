@@ -14,6 +14,7 @@ export Market, DynamicState, seller, buyer, isseller, isbuyer, associated_trades
 export BipartiteUnitMarket, RandomBipartiteUnitMarket, IntermediaryUnitMarket, RandomIntermediaryUnitMarket
 
 export neighbouring_offers, active, welfare, updated_offers, best_response!, dynamic, indirect_utility
+export isessential, essentialagents
 export generate_intermediary_demand, generate_intermediary_valuation, generate_utility, generate_unit_valuation, generate_unit_demand, generate_object_valuation, generate_two_trade_valuation, generate_random_two_trade_valuation
 export objects2trades, generate_lyapunov_function, τ
 export generate_two_trade_valuation, generate_params, all_sets, issubstitutes, issubmodular

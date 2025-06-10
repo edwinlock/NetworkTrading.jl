@@ -135,6 +135,35 @@ end
 welfare(market::Market) = welfare(market, offers)
 
 
+function generate_welfare_fn(market)
+    n, m, Ω = market.n, market.m, market.Ω
+    all_coalitions = Set.(powerset(1:n))
+    nontrivial_coalitions = Set.(powerset(1:n, 3))
+    all_bundles = Set.(powerset(1:m))
+    d = Dict(C => 0 for C ∈ all_coalitions)
+    # Compute the aggregate valuation for each subset of trades.
+    for Φ ∈ all_bundles
+        C = associated_agents(Φ, Ω)
+        welfare = 0
+        for i ∈ C
+            Φ_i = associated_trades(i, Φ, Ω)
+            welfare += market.valuation[i](Φ_i)
+        end
+        d[C] = max(d[C], welfare)
+    end
+    # Percolate the maximum values upwards in the lattice of coalitions.
+    for C ∈ nontrivial_coalitions
+        d[C] = max(d[C], maximum(d[setdiff(C, ω)] for ω ∈ C; init=0))
+    end
+    # Create function taking a coalition of agents and returning its welfare
+    function welfare(C::Vector{Int})
+        @assert C ⊆ 1:n "C must be a subset of agents 1 to n."
+        return d[Set(C)]
+    end
+    return welfare
+end
+
+
 """
 Compute active trades and their prices, (p, Ψ).
 """
@@ -151,6 +180,27 @@ function active_trades(offers, market::Market)
     end
     return p, Ψ
 end
+
+
+function isessential(market, i, welfare_fn; atol=0.0001)
+    grand_coalition = collect(1:market.n)
+    welfare = welfare_fn(grand_coalition)
+    welfare_without_i = welfare_fn(setdiff(grand_coalition, i))
+    return welfare - welfare_without_i ≥ atol
+end
+
+isessential(market, i) = isessential(market, i, generate_welfare_fn(market))
+
+
+function essentialagents(market, welfare_fn; atol=0.00001)
+    grand_coalition = collect(1:market.n)
+    welfare = welfare_fn(grand_coalition)
+    welfares_without = [welfare_fn(setdiff(grand_coalition, i)) for i ∈ grand_coalition]
+    essential_agents = [i for i ∈ 1:n if welfare - welfares_without[i] ≥ atol]
+    return essential_agents
+end
+
+essentialagents(market; atol=0.00001) = essentialagents(market, generate_welfare_fn(market); atol=atol)
 
 
 ### Convenience constructors

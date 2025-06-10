@@ -144,11 +144,6 @@ function nonemptycore(market, welfare)
 end
 
 
-# TODO: add some action functions according to section 7
-# TODO: create loop over all graphs
-# TODO: write functions "isdemanded" and "isCE"
-
-
 function diagnose(market)
     welfare_fn = generate_welfare_fn(found)
     println("Market with $(market.n) agents and $(market.m) trades.")
@@ -163,14 +158,35 @@ function diagnose(market)
     print_welfare_fn(welfare_fn, 1:found.m)
 end
 
+"""
+Return true iff leximin == leximax (up to atol).
+"""
+function leximin_vs_max(market, welfare_fn; atol=0.0001)
+    leximin_sol = find_optimal_core_imputation(market.n, welfare_fn, :leximin)
+    leximax_sol = find_optimal_core_imputation(market.n, welfare_fn, :leximax)
+    return all( abs.(leximin_sol .- leximax_sol) .≤ atol )
+end
 
-# explore_network(Ω, AgentIterators, 2, minvar_leximin_leximax_equal)
 
-# i = 1
-# iter = SubstitutesValuations(incoming_trades(i,Ω), outgoing_trades(i,Ω), 2)
-# v = first(iter)
-# print_valuation(v, associated_trades(i, Ω))
+function positiveleximin(market, welfare_fn; atol=0.001)
+    leximin_sol = find_optimal_core_imputation(market.n, welfare_fn, :leximin)
+    return minimum(leximin_sol[essentialagents(market, welfare_fn; atol=atol)]; init=1) ≥ atol
+end
 
+positiveleximin(market; atol=0.001) = positiveleximin(market, generate_welfare_fn(market); atol=atol)
+
+function zeroleximin(market, welfare_fn; atol=0.001)
+    leximin_sol = find_optimal_core_imputation(market.n, welfare_fn, :leximin)
+    return minimum(leximin_sol[essentialagents(market, welfare_fn; atol=atol)]; init=1) ≤ atol
+end
+
+zeroleximin(market; atol=0.001) = zeroleximin(market, generate_welfare_fn(market); atol=atol)
+
+
+
+# TODO: add some action functions according to section 7
+# TODO: create loop over all graphs
+# TODO: write functions "isdemanded" and "isCE"
 
 # Example 1:
 n=3
@@ -235,41 +251,6 @@ AgentIterators = [SubstitutesValuations, AllValuations]
 found = explore_network(Ω, AgentIterators, ub, nonemptycore);
 isnothing(found) || diagnose(found)
 
-
-function isessential(market, i, welfare_fn; atol=0.0001)
-    grand_coalition = collect(1:market.n)
-    welfare = welfare_fn(grand_coalition)
-    welfare_without_i = welfare_fn(setdiff(grand_coalition, i))
-    return welfare - welfare_without_i ≥ atol
-end
-
-isessential(market, i) = isessential(market, i, generate_welfare_fn(market))
-
-
-function essentialagents(market, welfare_fn; atol=0.00001)
-    grand_coalition = collect(1:market.n)
-    welfare = welfare_fn(grand_coalition)
-    welfares_without = [welfare_fn(setdiff(grand_coalition, i)) for i ∈ grand_coalition]
-    essential_agents = [i for i ∈ 1:n if welfare - welfares_without[i] ≥ atol]
-    return essential_agents
-end
-
-essentialagents(market; atol=0.00001) = essentialagents(market, generate_welfare_fn(market); atol=atol)
-
-function positiveleximin(market, welfare_fn; atol=0.001)
-    leximin_sol = find_optimal_core_imputation(market.n, welfare_fn, :leximin)
-    return minimum(leximin_sol[essentialagents(market, welfare_fn; atol=atol)]; init=1) ≥ atol
-end
-
-positiveleximin(market; atol=0.001) = positiveleximin(market, generate_welfare_fn(market); atol=atol)
-
-function zeroleximin(market, welfare_fn; atol=0.001)
-    leximin_sol = find_optimal_core_imputation(market.n, welfare_fn, :leximin)
-    return minimum(leximin_sol[essentialagents(market, welfare_fn; atol=atol)]; init=1) ≤ atol
-end
-
-zeroleximin(market; atol=0.001) = zeroleximin(market, generate_welfare_fn(market); atol=atol)
-
 # Example 4:
 n=3
 ub = 2
@@ -278,17 +259,6 @@ AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValua
 found = nothing
 found = explore_network(Ω, AgentIterators, ub, positiveleximin);
 isnothing(found) || diagnose(found)
-
-
-"""
-Return true iff leximin == leximax (up to atol).
-"""
-function leximin_vs_max(market, welfare_fn; atol=0.0001)
-    leximin_sol = find_optimal_core_imputation(market.n, welfare_fn, :leximin)
-    leximax_sol = find_optimal_core_imputation(market.n, welfare_fn, :leximax)
-    return all( abs.(leximin_sol .- leximax_sol) .≤ atol )
-end
-
 
 # Example 5:
 n=3
