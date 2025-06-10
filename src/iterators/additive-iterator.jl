@@ -1,4 +1,3 @@
-
 struct AdditiveValuations
     n::Int
     ub::Int
@@ -6,9 +5,10 @@ struct AdditiveValuations
     sellingtrades::Set{Int}
     alltrades::Set{Int}
     trade2good::Dict{Int, Int}
+    numvals::Int
 end
 
-Base.length(iter::AdditiveValuations) = (1+iter.ub)^iter.n
+Base.length(iter::AdditiveValuations) = iter.numvals
 Base.eltype(iter::AdditiveValuations) = Function
 
 """
@@ -35,12 +35,18 @@ function AdditiveValuations(buyingtrades::Set{Int}, sellingtrades::Set{Int}, ub:
     n = length(buyingtrades) + length(sellingtrades)
     alltrades = buyingtrades ∪ sellingtrades
     trade2good = Dict(ω => i for (i, ω) ∈ enumerate(alltrades))
-    return AdditiveValuations(n, ub, buyingtrades, sellingtrades, alltrades, trade2good)
+    numvals = (1+ub)^n
+    return AdditiveValuations(n, ub, buyingtrades, sellingtrades, alltrades, trade2good, numvals)
 end
 
 function Base.iterate(iter::AdditiveValuations, state=0)
     # Deal with terminating state
     state ≥ length(iter) && return nothing
+    valuation = construct_valuation(iter, state)
+    return valuation, state+1
+end
+
+function construct_valuation(iter::AdditiveValuations, state::Int)
     # Compute additive values
     additive_values = digits(state, base=iter.ub+1, pad=iter.n)
     # First we need to determine the value of the empty trade bundle.
@@ -59,5 +65,13 @@ function Base.iterate(iter::AdditiveValuations, state=0)
         # Compute and return the value of Θ
         return sum(additive_values[ω] for ω ∈ Θ; init=0) - emptybundlevalue
     end
-    return valuation, state+1
+    return valuation
 end
+
+function Base.getindex(iter::AdditiveValuations, i) 
+    0 <= i <= iter.numvals-1 || throw(BoundsError(iter, i))
+    return construct_valuation(iter, i)
+end
+
+Base.firstindex(iter::AdditiveValuations) = 0
+Base.lastindex(iter::AdditiveValuations) = length(iter)-1

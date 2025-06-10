@@ -10,9 +10,10 @@ struct SubstitutesValuations
     trade2good::Dict{Int, Int}
     idx::Dict{Set{Int}, Int}  # stores index of each set of *goods* in value vector collect(powerset(1:n))
     df::DataFrame
+    numvals::Int
 end
 
-Base.length(iter::SubstitutesValuations) = nrow(iter.df)
+Base.length(iter::SubstitutesValuations) = iter.numvals
 Base.eltype(iter::SubstitutesValuations) = Function
 
 """
@@ -50,12 +51,17 @@ function SubstitutesValuations(buyingtrades::Set{Int}, sellingtrades::Set{Int}, 
     allgoods = Set.(powerset(1:n))
     idx = Dict(Ψ => i for (i, Ψ) ∈ enumerate(allgoods))
     df = subset(raw_df, AsTable(All()) => ByRow(row -> all(<=(ub), row)))
-    return SubstitutesValuations(n, ub, buyingtrades, sellingtrades, alltrades, trade2good, idx, df)
+    return SubstitutesValuations(n, ub, buyingtrades, sellingtrades, alltrades, trade2good, idx, df, nrow(df))
 end
 
 function Base.iterate(iter::SubstitutesValuations, state=1)
     # Deal with terminating state
     state > nrow(iter.df) && return nothing
+    valuation = construct_valuation(iter, state)
+    return valuation, state+1
+end
+
+function construct_valuation(iter::SubstitutesValuations, state)
     # Retrieve current row from df
     value_vector = collect(iter.df[state, :])
     # Create and return valuation function
@@ -75,5 +81,12 @@ function Base.iterate(iter::SubstitutesValuations, state=1)
         # taking care to normalise by subtracting emptybundlevalue
         return value_vector[iter.idx[Θ]] - emptybundlevalue
     end
-    return valuation, state+1
 end
+
+function Base.getindex(iter::SubstitutesValuations, i) 
+    1 <= i <= iter.numvals || throw(BoundsError(iter, i))
+    return construct_valuation(iter, i)
+end
+
+Base.firstindex(iter::SubstitutesValuations) = 1
+Base.lastindex(iter::SubstitutesValuations) = length(iter)

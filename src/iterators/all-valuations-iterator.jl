@@ -6,6 +6,7 @@ struct AllValuations
     alltrades::Set{Int}
     trade2good::Dict{Int, Int}
     idx::Dict{Set{Int}, Int}  # stores index of each set of *goods* in value vector collect(powerset(1:n))
+    numvals::Int
 end
 
 Base.length(iter::AllValuations) = (1+iter.ub)^(2^iter.n-1)
@@ -36,12 +37,18 @@ function AllValuations(buyingtrades::Set{Int}, sellingtrades::Set{Int}, ub::Int)
     trade2good = Dict(ω => i for (i, ω) ∈ enumerate(alltrades))
     allgoodbundles = Set.(powerset(1:n))
     idx = Dict(Ψ => i for (i, Ψ) ∈ enumerate(allgoodbundles))
-    return AllValuations(n, ub, buyingtrades, sellingtrades, alltrades, trade2good, idx)
+    numvals = (1+ub)^(2^n-1)
+    return AllValuations(n, ub, buyingtrades, sellingtrades, alltrades, trade2good, idx, numvals)
 end
 
 function Base.iterate(iter::AllValuations, state=0)
     # Deal with terminating state
     state ≥ length(iter) && return nothing
+    valuation = construct_valuation(iter, state)
+    return valuation, state+1
+end
+
+function construct_valuation(iter::AllValuations, state)
     values = [0; digits(state, base=iter.ub+1, pad=2^iter.n-1)]
     # Create and return valuation function
     # First we need to determine the value of the empty trade bundle.
@@ -59,5 +66,13 @@ function Base.iterate(iter::AllValuations, state=0)
         # Get the index of Θ in the valuation vector and return value
         return values[iter.idx[Θ]] - emptybundlevalue
     end
-    return valuation, state+1
+    return valuation
 end
+
+function Base.getindex(iter::AllValuations, i) 
+    0 <= i <= iter.numvals-1 || throw(BoundsError(iter, i))
+    return construct_valuation(iter, i)
+end
+
+Base.firstindex(iter::AllValuations) = 0
+Base.lastindex(iter::AllValuations) = length(iter)-1
