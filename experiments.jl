@@ -64,11 +64,11 @@ function explore_network(Ω, AgentIterators, ub, action_function)
     @info "Finished constructing iterators, starting the search."
     @showprogress for valuations ∈ Iterators.product(agentiters...)
         # Create demand functions for each agent
-        local demand = [generate_demand(i, Ω, valuations[i]) for i in 1:n]
+        demand = [generate_demand(i, Ω, valuations[i]) for i in 1:n]
         # Create the market
-        local market = Market(Ω, collect(valuations), demand)
+        market = Market(Ω, collect(valuations), demand)
         # Generate welfare function
-        local welfare = generate_welfare_fn(market)
+        welfare = generate_welfare_fn(market)
         action_function(market, welfare) || return market
     end
     return nothing
@@ -91,7 +91,7 @@ end
 
 
 """
-Print a valuation function for given trades.
+Print the welfare function with given trades.
 """
 function print_welfare_fn(w, trades)
     trades = collect(trades)
@@ -145,7 +145,6 @@ end
 
 
 # TODO: add some action functions according to section 7
-# TODO: create function to print if the action function stops the exploration
 # TODO: create loop over all graphs
 # TODO: write functions "isdemanded" and "isCE"
 
@@ -173,7 +172,7 @@ end
 # print_valuation(v, associated_trades(i, Ω))
 
 
-# Example:
+# Example 1:
 n=3
 graphs = generate_digraphs(n)
 println("Number of non-isomorphic graphs for n=$n: ", length(graphs))
@@ -187,10 +186,11 @@ isnothing(found) || diagnose(found)
 
 # Example 2:
 n=3
+ub=1
 AgentIterators = [AllValuations for _ in 1:n]
 Ω = [(1,2), (1,3), (3,2)]
 
-found = explore_network(Ω, AgentIterators, 2, nonemptycore)
+found = explore_network(Ω, AgentIterators, ub, nonemptycore);
 isnothing(found) || diagnose(found)
 
 # Market with 3 agents and 3 trades.
@@ -209,10 +209,12 @@ isnothing(found) || diagnose(found)
 # [1, 3] => 0
 
 # For agent 3:
-# Int64[] => 0
-# [2] => 1
-# [3] => 0
-# [2, 3] => 0
+# buying trade is 2
+# selling trade is 3
+# Int64[] => 0          [3]   => 0
+# [2] => 1              [2,3] => 1
+# [3] => 0              []    => 0
+# [2, 3] => 0           [2]   => 0
 
 # Welfare function:
 # Int64[] => 0
@@ -226,9 +228,73 @@ isnothing(found) || diagnose(found)
 
 # Example 3:
 n=3
-graphs = generate_digraphs(n)
-AgentIterators = [AdditiveValuations, AdditiveValuations, AllValuations]
-Ω = [(1,2), (1,3), (3,2)]
+ub = 5
+AgentIterators = [SubstitutesValuations, AllValuations]
+Ω = [(1,2), (2,1)]
 
-found = explore_network(Ω, AgentIterators, 2, nonemptycore)
+found = explore_network(Ω, AgentIterators, ub, nonemptycore);
+isnothing(found) || diagnose(found)
+
+
+function isessential(market, i, welfare_fn; atol=0.0001)
+    grand_coalition = collect(1:market.n)
+    welfare = welfare_fn(grand_coalition)
+    welfare_without_i = welfare_fn(setdiff(grand_coalition, i))
+    return welfare - welfare_without_i ≥ atol
+end
+
+isessential(market, i) = isessential(market, i, generate_welfare_fn(market))
+
+
+function essentialagents(market, welfare_fn; atol=0.00001)
+    grand_coalition = collect(1:market.n)
+    welfare = welfare_fn(grand_coalition)
+    welfares_without = [welfare_fn(setdiff(grand_coalition, i)) for i ∈ grand_coalition]
+    essential_agents = [i for i ∈ 1:n if welfare - welfares_without[i] ≥ atol]
+    return essential_agents
+end
+
+essentialagents(market; atol=0.00001) = essentialagents(market, generate_welfare_fn(market); atol=atol)
+
+function positiveleximin(market, welfare_fn; atol=0.001)
+    leximin_sol = find_optimal_core_imputation(market.n, welfare_fn, :leximin)
+    return minimum(leximin_sol[essentialagents(market, welfare_fn; atol=atol)]; init=1) ≥ atol
+end
+
+positiveleximin(market; atol=0.001) = positiveleximin(market, generate_welfare_fn(market); atol=atol)
+
+function zeroleximin(market, welfare_fn; atol=0.001)
+    leximin_sol = find_optimal_core_imputation(market.n, welfare_fn, :leximin)
+    return minimum(leximin_sol[essentialagents(market, welfare_fn; atol=atol)]; init=1) ≤ atol
+end
+
+zeroleximin(market; atol=0.001) = zeroleximin(market, generate_welfare_fn(market); atol=atol)
+
+# Example 4:
+n=3
+ub = 2
+AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
+Ω = [(1,2), (1,3), (3,2)]
+found = nothing
+found = explore_network(Ω, AgentIterators, ub, positiveleximin);
+isnothing(found) || diagnose(found)
+
+
+"""
+Return true iff leximin == leximax (up to atol).
+"""
+function leximin_vs_max(market, welfare_fn; atol=0.0001)
+    leximin_sol = find_optimal_core_imputation(market.n, welfare_fn, :leximin)
+    leximax_sol = find_optimal_core_imputation(market.n, welfare_fn, :leximax)
+    return all( abs.(leximin_sol .- leximax_sol) .≤ atol )
+end
+
+
+# Example 5:
+n=3
+ub = 2
+AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
+Ω = [(1,2), (1,3), (3,2)]
+found = nothing
+found = explore_network(Ω, AgentIterators, ub, leximin_vs_max);
 isnothing(found) || diagnose(found)
