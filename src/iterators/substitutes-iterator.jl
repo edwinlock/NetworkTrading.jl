@@ -42,7 +42,7 @@ function SubstitutesValuations(buyingtrades::Set{Int}, sellingtrades::Set{Int}, 
     alltrades = buyingtrades ∪ sellingtrades
     if n == 1 && ub ≤ 100
         raw_df = CSV.read("src/iterators/substitutes-1-100.csv", DataFrame)
-    if n == 2 && ub ≤ 100
+    elseif n == 2 && ub ≤ 100
         raw_df = CSV.read("src/iterators/substitutes-2-100.csv", DataFrame)
     elseif n == 3 && ub ≤ 15
         raw_df = CSV.read("src/iterators/substitutes-3-15.csv", DataFrame)
