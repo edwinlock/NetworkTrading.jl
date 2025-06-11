@@ -61,8 +61,9 @@ function explore_network(Ω, AgentIterators, ub, action_function)
     buyingtrades = [incoming_trades(i, Ω) for i ∈ 1:n] 
     sellingtrades = [outgoing_trades(i, Ω) for i ∈ 1:n]
     agentiters = [AgentIterators[i](buyingtrades[i], sellingtrades[i], ub) for i ∈ 1:n]
-    @info "Finished constructing iterators, starting the search."
-    @showprogress for valuations ∈ Iterators.product(agentiters...)
+    all_combos = Iterators.product(agentiters...)
+    @info "Finished constructing iterators, starting the search over $(length(all_combos)) combinations of valuations."
+    @showprogress for valuations ∈ all_combos
         # Create demand functions for each agent
         demand = [generate_demand(i, Ω, valuations[i]) for i in 1:n]
         # Create the market
@@ -182,13 +183,17 @@ end
 
 zeroleximin(market; atol=0.001) = zeroleximin(market, generate_welfare_fn(market); atol=atol)
 
-
+function hasessentialagents(market, welfare_fn; atol=0.0001)
+    grand_coalition = collect(1:market.n)
+    welfare_fn(grand_coalition) ≤ atol && return true  # only non-trivial markets are interesting
+    return length(essentialagents(market, welfare_fn)) > 0
+end
 
 # TODO: add some action functions according to section 7
 # TODO: create loop over all graphs
 # TODO: write functions "isdemanded" and "isCE"
 
-# Example 0:
+# # Example 0:
 # Generate all non-isomorphic directed graphs with 3 nodes
 # graphs = generate_digraphs(n)
 # println("Number of non-isomorphic graphs for n=$n: ", length(graphs))
@@ -196,8 +201,9 @@ zeroleximin(market; atol=0.001) = zeroleximin(market, generate_welfare_fn(market
 
 
 # # Example 1:
+# (Not really necessary, because we have a theoretical proof that all substitutes markets have a non-empty core)
 # ub = 2
-# AgentIterators = [SubstitutesValuations for _ in 1:n]
+# AgentIterators = [SubstitutesValuations for _ in 1:3]
 # Ω = [(1,2), (1,3), (3,2)]
 # found = nothing
 # found = explore_network(Ω, AgentIterators, ub, nonemptycore)
@@ -216,16 +222,16 @@ zeroleximin(market; atol=0.001) = zeroleximin(market, generate_welfare_fn(market
 # AgentIterators = [SubstitutesValuations, AllValuations]
 # Ω = [(1,2), (2,1)]
 # found = nothing
-# found = explore_network(Ω, AgentIterators, ub, nonemptycore);
+# found = explore_network(Ω, AgentIterators, ub, positiveleximin);
 # isnothing(found) || diagnose(found)
 
-# # Example 4: In the leximin soluttion, do all agents receive posistive utility?
-ub = 2
-AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
-Ω = [(1,2), (1,3), (3,2)]
-found = nothing
-found = explore_network(Ω, AgentIterators, ub, positiveleximin);
-isnothing(found) || diagnose(found)
+# # Example 4: In the leximin solution, do all agents receive posistive utility?
+# ub = 2
+# AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
+# Ω = [(1,2), (1,3), (3,2)]
+# found = nothing
+# found = explore_network(Ω, AgentIterators, ub, positiveleximin);
+# isnothing(found) || diagnose(found)
 
 # # Example 5:
 # ub = 2
@@ -236,4 +242,34 @@ isnothing(found) || diagnose(found)
 # isnothing(found) || diagnose(found)
 
 
-# Questions: are there substitutes markets where all agents are inessential?
+
+# Questions: are there substitutes markets with positive market value in which all agents are inessential?
+
+# Example 6:
+ub = 3
+AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
+Ω = [(1,3), (2,3), (1,4), (2,4)]
+found = nothing
+found = explore_network(Ω, AgentIterators, ub, hasessentialagents);
+isnothing(found) || diagnose(found)
+
+
+# Failed attempt to manually create an example with positive market value and no essential agents
+# Ω = [(1,3), (1,4), (2,3), (2,4)]
+# function buyer_valuation(Φ::Set{Int})
+#     length(Φ) == 0 && return 0
+#     length(Φ) == 1 && return 3
+#     length(Φ) == 2 && return 4
+# end
+
+# function seller_valuation(Φ::Set{Int})
+#     length(Φ) == 0 && return 0
+#     length(Φ) == 1 && return -1
+#     length(Φ) == 2 && return -4
+# end
+# valuations = [buyer_valuation, buyer_valuation, seller_valuation, seller_valuation]
+# market = Market(Ω, valuations)
+# w = generate_welfare_fn(market)
+# print_welfare_fn(w, 1:4)
+
+# Idea: we could write a SymmetricValuations iterator, for which all bundles of the same cardinality have the same value?

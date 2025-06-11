@@ -294,3 +294,14 @@ function issubmodular(v, A)
     end
     return true
 end
+
+
+function create_valuation_fn(values::Vector{Int})
+    n = round(Int, log(2, length(values)))  # number of goods
+    d = Dict(Set(Φ) => i for (i, Φ) ∈ enumerate(powerset(1:n)))
+    function valuation(Φ::Set{Int})
+        @assert Φ ⊆ 1:n "Φ must be a subset of agents 1 to n."
+        return values[d[Φ]]
+    end
+    return valuation
+end

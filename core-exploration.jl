@@ -136,7 +136,7 @@ end
 # sweep_agent_functions(4,4)
 
 
-function create_valuation_fn(values)
+function create_valuation_fn(values::Vector{Int})
     n = round(Int, log(2, length(values)))  # number of goods
     d = Dict(Set(Φ) => i for (i, Φ) ∈ enumerate(powerset(1:n)))
     function valuation(Φ::Set{Int})

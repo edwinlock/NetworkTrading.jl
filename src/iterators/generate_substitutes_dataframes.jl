@@ -30,6 +30,11 @@ function filter_substitutes(df)
 end
 
 
+iter = SubmodularFunctions(1, 100)
+submodular_df = listall(iter)
+substitutes_df = filter_substitutes(submodular_df)
+CSV.write("substitutes-2-100.csv", substitutes_df)
+
 iter = SubmodularFunctions(2, 100)
 submodular_df = listall(iter)
 substitutes_df = filter_substitutes(submodular_df)

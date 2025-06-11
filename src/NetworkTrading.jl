@@ -25,6 +25,7 @@ export generate_welfare_fn, find_optimal_core_imputation
 export core_model, sorted_core_model, leximin_model, leximax_model, minvar_model, find_optimal_core_imputation, find_leximin_core_imputation, find_leximax_core_imputation, find_minvar_core_imputation
 export Powerset, length, eltype, SubmodularFunctionIterator, listall, SubmodularFunctions
 export SubstitutesValuations, AdditiveValuations, AllValuations
+export create_valuation_fn
 
 using PrecompileTools
 @compile_workload begin

@@ -38,7 +38,10 @@ upper bounded by ub=5.
 function SubstitutesValuations(buyingtrades::Set{Int}, sellingtrades::Set{Int}, ub::Int)
     @assert length(buyingtrades ∩ sellingtrades) == 0 "Buying and selling trades must be disjoint."
     n = length(buyingtrades) + length(sellingtrades)
+
     alltrades = buyingtrades ∪ sellingtrades
+    if n == 1 && ub ≤ 100
+        raw_df = CSV.read("src/iterators/substitutes-1-100.csv", DataFrame)
     if n == 2 && ub ≤ 100
         raw_df = CSV.read("src/iterators/substitutes-2-100.csv", DataFrame)
     elseif n == 3 && ub ≤ 15
