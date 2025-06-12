@@ -65,9 +65,9 @@ function explore_network(Ω, AgentIterators, ub, action_function)
     @info "Finished constructing iterators, starting the search over $(length(all_combos)) combinations of valuations."
     @showprogress for valuations ∈ all_combos
         # Create demand functions for each agent
-        demand = [generate_demand(i, Ω, valuations[i]) for i in 1:n]
+        # demand = [generate_demand(i, Ω, valuations[i]) for i in 1:n]
         # Create the market
-        market = Market(Ω, collect(valuations), demand)
+        market = Market(Ω, collect(valuations))
         # Generate welfare function
         welfare = generate_welfare_fn(market)
         action_function(market, welfare) || return market
@@ -75,6 +75,26 @@ function explore_network(Ω, AgentIterators, ub, action_function)
     return nothing
 end
 
+
+function explore_network_randomly(Ω, AgentIterators, ub, action_function; reps=10)
+    n = length(AgentIterators)
+    buyingtrades = [incoming_trades(i, Ω) for i ∈ 1:n] 
+    sellingtrades = [outgoing_trades(i, Ω) for i ∈ 1:n]
+    agentiters = [AgentIterators[i](buyingtrades[i], sellingtrades[i], ub) for i ∈ 1:n]
+    random_valuations = [rand(agentiters[i], reps) for i ∈ 1:n]
+    all_combos = Iterators.product(random_valuations...)
+    @info "Finished constructing iterators, starting the search over $length(all_combos) randomly drawn markets."
+    @showprogress for valuations ∈ all_combos
+        # Create demand functions for each agent
+        # demand = [generate_demand(i, Ω, valuations[i]) for i in 1:n]
+        # Create the market
+        market = Market(Ω, collect(valuations))
+        # Generate welfare function
+        welfare = generate_welfare_fn(market)
+        action_function(market, welfare) || return market
+    end
+    return nothing
+end
 
 """
 Print a valuation function for given trades.
@@ -201,15 +221,6 @@ end
 
 
 # # Example 1:
-# (Not really necessary, because we have a theoretical proof that all substitutes markets have a non-empty core)
-# ub = 2
-# AgentIterators = [SubstitutesValuations for _ in 1:3]
-# Ω = [(1,2), (1,3), (3,2)]
-# found = nothing
-# found = explore_network(Ω, AgentIterators, ub, nonemptycore)
-# isnothing(found) || diagnose(found)
-
-# # Example 2:
 # ub=1
 # AgentIterators = [AllValuations for _ in 1:n]
 # Ω = [(1,2), (1,3), (3,2)]
@@ -217,7 +228,7 @@ end
 # found = explore_network(Ω, AgentIterators, ub, nonemptycore);
 # isnothing(found) || diagnose(found)
 
-# # Example 3:
+# # Example 2:
 # ub = 5
 # AgentIterators = [SubstitutesValuations, AllValuations]
 # Ω = [(1,2), (2,1)]
@@ -225,16 +236,16 @@ end
 # found = explore_network(Ω, AgentIterators, ub, positiveleximin);
 # isnothing(found) || diagnose(found)
 
-# # Example 4: In the leximin solution, do all agents receive posistive utility?
-ub = 2
-AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
-Ω1 = generate_digraphs(3)
-println("Unique graphs: ", Ω1)
-found = nothing
-Ω = [(1, 2)]
-println("Exploring network with Ω = $Ω")
-found = explore_network(Ω, AgentIterators, ub, positiveleximin)
-isnothing(found) || diagnose(found)
+# # Example 3: In the leximin solution, do all agents receive posistive utility?
+# ub = 2
+# AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
+# Ω1 = generate_digraphs(3)
+# println("Unique graphs: ", Ω1)
+# found = nothing
+# Ω = [(1, 2)]
+# println("Exploring network with Ω = $Ω")
+# found = explore_network(Ω, AgentIterators, ub, positiveleximin)
+# isnothing(found) || diagnose(found)
 # @info "Finished constructing networks, starting the search over $(length(Ω1)) combinations of valuations."
 # @showprogress for Ω in Ω1
 #     println("Exploring network with Ω = $Ω")
@@ -243,7 +254,7 @@ isnothing(found) || diagnose(found)
 # end
 
 
-# # Example 5:
+# # Example 4:
 # ub = 2
 # AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
 # Ω = [(1,2), (1,3), (3,2)]
@@ -255,7 +266,7 @@ isnothing(found) || diagnose(found)
 
 # Questions: are there substitutes markets with positive market value in which all agents are inessential?
 
-# Example 6:
+# Example 5:
 # ub = 3
 # AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
 # Ω = [(1,3), (2,3), (1,4), (2,4)]
@@ -283,3 +294,12 @@ isnothing(found) || diagnose(found)
 # print_welfare_fn(w, 1:4)
 
 # Idea: we could write a SymmetricValuations iterator, for which all bundles of the same cardinality have the same value?
+
+
+# Example X:
+Ω = [(1,3), (1,4), (2,3), (2,4)]
+ub = 10
+AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
+found = nothing
+found = explore_network_randomly(Ω, AgentIterators, ub, positiveleximin, reps=10);
+isnothing(found) || diagnose(found)

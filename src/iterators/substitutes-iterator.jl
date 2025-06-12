@@ -1,5 +1,6 @@
 using CSV
 using DataFrames
+using Random
 
 struct SubstitutesValuations
     n::Int
@@ -38,7 +39,7 @@ upper bounded by ub=5.
 function SubstitutesValuations(buyingtrades::Set{Int}, sellingtrades::Set{Int}, ub::Int)
     @assert length(buyingtrades ∩ sellingtrades) == 0 "Buying and selling trades must be disjoint."
     n = length(buyingtrades) + length(sellingtrades)
-    println("Creating iterator for $n trades with ub=$ub")
+    # println("Creating iterator for $n trades with ub=$ub")
     alltrades = buyingtrades ∪ sellingtrades
     if n == 0
         raw_df = DataFrame(string(Int[]) => [0])
@@ -88,10 +89,35 @@ function construct_valuation(iter::SubstitutesValuations, state)
     end
 end
 
-function Base.getindex(iter::SubstitutesValuations, i) 
+function Base.getindex(iter::SubstitutesValuations, i::Int) 
     1 <= i <= iter.numvals || throw(BoundsError(iter, i))
     return construct_valuation(iter, i)
 end
 
+function Base.getindex(iter::SubstitutesValuations, idx::Vector{Int})
+    idx ⊆ 1:iter.numvals || throw(BoundsError(iter, idx))
+    return [ construct_valuation(iter, i) for i ∈ idx ]
+end
+
+
 Base.firstindex(iter::SubstitutesValuations) = 1
 Base.lastindex(iter::SubstitutesValuations) = length(iter)
+
+
+
+function Random.rand(rng::Random.AbstractRNG, iter::SubstitutesValuations)
+    idx = rand(rng, 1:length(iter))
+    return iter[idx]
+end
+
+# Convenience method that uses the default RNG
+Random.rand(iter::SubstitutesValuations) = rand(Random.default_rng(), iter)
+
+# Function for returning multiple
+function Random.rand(rng::Random.AbstractRNG, iter::SubstitutesValuations, n::Int)
+    idx = rand(rng, 1:length(iter), n)
+    return iter[idx]
+end
+
+# Convenience method that uses the default RNG
+Random.rand(iter::SubstitutesValuations, n::Int) = rand(Random.default_rng(), iter, n)
