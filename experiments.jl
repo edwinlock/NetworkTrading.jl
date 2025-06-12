@@ -9,7 +9,7 @@ using ProgressMeter
 # Generate all possible directed graphs with n nodes
 function generate_digraphs(n::Int)
     nodes = 1:n
-    all_edges = [(i, j) for i in nodes, j in nodes if i != j]
+    all_edges = [(i, j) for i in nodes, j in nodes if i < j]
     unique_canon_graphs = Set{}()
     unique_graphs = Set{Vector{Tuple{Int64, Int64}}}()
     for edge_subset in powerset(all_edges,1) # omit the empty set
@@ -226,12 +226,22 @@ end
 # isnothing(found) || diagnose(found)
 
 # # Example 4: In the leximin solution, do all agents receive posistive utility?
-# ub = 2
-# AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
-# Ω = [(1,2), (1,3), (3,2)]
-# found = nothing
-# found = explore_network(Ω, AgentIterators, ub, positiveleximin);
-# isnothing(found) || diagnose(found)
+ub = 2
+AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
+Ω1 = generate_digraphs(3)
+println("Unique graphs: ", Ω1)
+found = nothing
+Ω = [(1, 2)]
+println("Exploring network with Ω = $Ω")
+found = explore_network(Ω, AgentIterators, ub, positiveleximin)
+isnothing(found) || diagnose(found)
+# @info "Finished constructing networks, starting the search over $(length(Ω1)) combinations of valuations."
+# @showprogress for Ω in Ω1
+#     println("Exploring network with Ω = $Ω")
+#     found = explore_network(Ω, AgentIterators, ub, positiveleximin)
+#     isnothing(found) || diagnose(found)
+# end
+
 
 # # Example 5:
 # ub = 2
@@ -246,12 +256,12 @@ end
 # Questions: are there substitutes markets with positive market value in which all agents are inessential?
 
 # Example 6:
-ub = 3
-AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
-Ω = [(1,3), (2,3), (1,4), (2,4)]
-found = nothing
-found = explore_network(Ω, AgentIterators, ub, hasessentialagents);
-isnothing(found) || diagnose(found)
+# ub = 3
+# AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
+# Ω = [(1,3), (2,3), (1,4), (2,4)]
+# found = nothing
+# found = explore_network(Ω, AgentIterators, ub, hasessentialagents);
+# isnothing(found) || diagnose(found)
 
 
 # Failed attempt to manually create an example with positive market value and no essential agents
