@@ -62,7 +62,8 @@ function explore_network(Ω, AgentIterators, ub, action_function)
     sellingtrades = [outgoing_trades(i, Ω) for i ∈ 1:n]
     agentiters = [AgentIterators[i](buyingtrades[i], sellingtrades[i], ub) for i ∈ 1:n]
     all_combos = Iterators.product(agentiters...)
-    @info "Finished constructing iterators, starting the search over $(length(all_combos)) combinations of valuations."
+    l = length(all_combos)
+    @info "Finished constructing iterators, starting the search over $(length(l)) combinations of valuations."
     @showprogress for valuations ∈ all_combos
         # Create demand functions for each agent
         # demand = [generate_demand(i, Ω, valuations[i]) for i in 1:n]
@@ -83,7 +84,7 @@ function explore_network_randomly(Ω, AgentIterators, ub, action_function; reps=
     agentiters = [AgentIterators[i](buyingtrades[i], sellingtrades[i], ub) for i ∈ 1:n]
     random_valuations = [rand(agentiters[i], reps) for i ∈ 1:n]
     all_combos = Iterators.product(random_valuations...)
-    @info "Finished constructing iterators, starting the search over $length(all_combos) randomly drawn markets."
+    @info "Finished constructing iterators, starting the search over $(length(all_combos)) randomly drawn markets."
     @showprogress for valuations ∈ all_combos
         # Create demand functions for each agent
         # demand = [generate_demand(i, Ω, valuations[i]) for i in 1:n]
@@ -91,7 +92,12 @@ function explore_network_randomly(Ω, AgentIterators, ub, action_function; reps=
         market = Market(Ω, collect(valuations))
         # Generate welfare function
         welfare = generate_welfare_fn(market)
-        action_function(market, welfare) || return market
+        try
+            action_function(market, welfare) || return market
+        catch e
+            println("Error: $e.")
+            return market
+        end
     end
     return nothing
 end
@@ -297,9 +303,14 @@ end
 
 
 # Example X:
+# Ω = [(1,3), (1,4), (2,3)]
 Ω = [(1,3), (1,4), (2,3), (2,4)]
 ub = 10
 AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
 found = nothing
 found = explore_network_randomly(Ω, AgentIterators, ub, positiveleximin, reps=10);
 isnothing(found) || diagnose(found)
+essentialagents(found)
+w = generate_welfare_fn(found)
+find_optimal_core_imputation(4, w, :leximin)
+diagnose(found)

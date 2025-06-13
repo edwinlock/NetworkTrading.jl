@@ -104,7 +104,9 @@ function leximin_model(n::Int, w)
     set_optimizer(model, () -> MOA.Optimizer(Optimizer))
     set_attribute(model, MOA.Algorithm(), MOA.Lexicographic())
     set_attribute(model, MOA.LexicographicAllPermutations(), false)
-
+    for i ∈ eachindex(y)
+        set_attribute(model, MOA.ObjectiveRelativeTolerance(i), 10e-6)
+    end
     # Define objective
     @objective(model, Max, y)
     
