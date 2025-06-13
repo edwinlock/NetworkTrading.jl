@@ -39,7 +39,7 @@ upper bounded by ub=5.
 function SubstitutesValuations(buyingtrades::Set{Int}, sellingtrades::Set{Int}, ub::Int)
     @assert length(buyingtrades ∩ sellingtrades) == 0 "Buying and selling trades must be disjoint."
     n = length(buyingtrades) + length(sellingtrades)
-    # println("Creating iterator for $n trades with ub=$ub")
+    println("Creating iterator for $n trades with ub=$ub")
     alltrades = buyingtrades ∪ sellingtrades
     if n == 0
         raw_df = DataFrame(string(Int[]) => [0])

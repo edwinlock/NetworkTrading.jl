@@ -303,14 +303,29 @@ end
 
 
 # Example X:
+# # Ω = [(1,3), (1,4), (2,3)]
+# Ω = [(1,3), (1,4), (2,3), (2,4)]
+# ub = 10
+# AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
+# found = nothing
+# found = explore_network_randomly(Ω, AgentIterators, ub, positiveleximin, reps=10);
+# isnothing(found) || diagnose(found)
+# essentialagents(found)
+# w = generate_welfare_fn(found)
+# find_optimal_core_imputation(4, w, :leximin)
+# diagnose(found)
+
+
+# Example 11:
 # Ω = [(1,3), (1,4), (2,3)]
-Ω = [(1,3), (1,4), (2,3), (2,4)]
-ub = 10
-AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
+Ω = [(1,2), (1,2), (3,1)]
+n = 3
+ub = 15
+AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
 found = nothing
-found = explore_network_randomly(Ω, AgentIterators, ub, positiveleximin, reps=10);
+found = explore_network_randomly(Ω, AgentIterators, ub, positiveleximin, reps=30);
 isnothing(found) || diagnose(found)
 essentialagents(found)
 w = generate_welfare_fn(found)
-find_optimal_core_imputation(4, w, :leximin)
+find_optimal_core_imputation(n, w, :leximin)
 diagnose(found)
