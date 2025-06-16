@@ -12,6 +12,90 @@ Optimizer = () -> Gurobi.Optimizer(GRB_ENV[])
 
 
 """
+    lyapunov_model(market::Market)
+
+Defines the optimisation model implementing the Lyapunov function.
+Solving this model will yield a competitive equilibrium price vector.
+
+Returns model and variables p (prices) and u (utilities).
+"""
+function lyapunov_model(market::Market)
+    Ω = market.Ω
+    m = length(market.Ω)
+    n = market.n
+    model = Model(Optimizer)
+    @variable(model, p[1:m])
+    @variable(model, u[1:n])
+    for i ∈ 1:n
+        v = market.valuation[i]
+        χ = market.χ
+        for Φ ∈ associated_trades(i, Ω)
+            @constraint(model, u[i] ≥ v(Φ) - sum(χ(i, ω, Ω)*p[ω] for ω ∈ Φ; init=0))
+        end
+    end
+    @objective(model, Max, sum(u))
+    return model, p, u
+end
+
+
+"""
+    find_competitive_equilibrium_prices(market::Market)
+
+
+Compute competitive equilibrium prices. Guaranteed to return prices,
+which are CE if market has one.
+
+TODO: Also return CE allocation, using dual variables.
+"""
+function find_competitive_equilibrium_prices(market::Market)
+    model, p, u = lyapunov_model(market)
+    optimize!(model)
+    return value.(p)
+end
+
+
+"""
+    constrained_lyapunov_model(market::Market, u)
+
+Implements constrained lyapunov model, for computing CE prices from a core imputation.
+
+Argument u must be a core imputation of the market.
+"""
+function constrained_lyapunov_model(market::Market, u)
+    Ω = market.Ω
+    m = length(market.Ω)
+    n = market.n
+    model = Model(Optimizer)
+    @variable(model, p[1:m])
+    for i ∈ 1:n
+        v = market.valuation[i]
+        χ = market.χ
+        for Φ ∈ associated_trades(i, Ω)
+            @constraint(model, u[i] ≥ v(Φ) - sum(χ(i, ω, Ω)*p[ω] for ω ∈ Φ; init=0))
+        end
+    end
+    @objective(model, Max, 0)
+    return model, p
+end
+
+
+"""
+    find_competitive_equilibrium_prices(market::Market, u)
+
+Find CE prices that can be extended with an allocation to a CE so that
+every agent i gets utility u[i].
+
+Returns `nothing` if no such prices exist.
+"""
+function find_competitive_equilibrium_prices(market::Market, u)
+    model, p = constrained_lyapunov_model(market, u)
+    !optimize!(model)
+    !is_solved_and_feasible(model) && return nothing
+    return value.(p)
+end
+
+
+"""
     core_model(n::Int, w::Function)
 
 Create model that represents the core. The core is defined by constraints:

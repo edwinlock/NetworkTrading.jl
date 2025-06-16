@@ -69,6 +69,8 @@ end
 
 
 """
+    associated_trades(i, Φ, Ω)
+
 Compute all trades in Φ (defaults to all trades, 1:length(Ω)) of Ω associated with agent i.
 """
 associated_trades(i, Φ, Ω) = Set(ω for ω ∈ Φ if i ∈ Ω[ω])
