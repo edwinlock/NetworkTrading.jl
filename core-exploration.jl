@@ -132,60 +132,16 @@ function sweep_agent_functions(n, ub; atol=10e-4)
     @info "Finished exploring. Encountered $feasible_instances feasible instances and $infeasible_instances infeasible instances."
 end
 
-# sweep_agent_functions(3,5)
-# sweep_agent_functions(4,4)
+sweep_agent_functions(3,10)
+sweep_agent_functions(4,4)
 
 
-function create_valuation_fn(values::Vector{Int})
-    n = round(Int, log(2, length(values)))  # number of goods
-    d = Dict(Set(Φ) => i for (i, Φ) ∈ enumerate(powerset(1:n)))
-    function valuation(Φ::Set{Int})
-        @assert Φ ⊆ 1:n "Φ must be a subset of agents 1 to n."
-        return values[d[Φ]]
-    end
-    return valuation
-end
-
-
-function compute_all_substitutes(n, ub; normalize=true)
-    A = Powerset(n)
-    df = DataFrame([string(S) => Int[] for S ∈ A]...)
-    if normalize
-        iter = Iterators.product((0,), ntuple(_ -> 0:ub, 2^n-1)...)
-    else
-        iter = Iterators.product(ntuple(_ -> 0:ub, 2^n)...)
-    end
-    @showprogress for values ∈ iter
-        valuation = create_valuation_fn(values)
-        issubstitutes(valuation, A) && push!(df, values)
-    end
-    return df
-end
-
-num_valuations(n, ub) = (ub+1)^(2^n-1)
-
-n = 2
-ub = 10
-println("There are $(num_valuations(n, ub)) valuations for $n goods and ub=$ub.")
-@time df2_normalized = compute_all_substitutes(n, ub)
-
-function merge_vectors(n, lowerdf, otherdf)
-    A = Powerset(n)
-    df = DataFrame([string(S) => Int[] for S ∈ A]...)
-    @showprogress for (i,j) ∈ Iterators.product(1:nrow(lowerdf), 1:nrow(otherdf))
-        v = collect(lowerdf[i, :])
-        w = collect(otherdf[j, :])
-        values = [v; w]
-        valuation = create_valuation_fn(values)
-        issubstitutes(valuation, A) && push!(df, values)
-    end
-    return df
-end
-
-
-n = 3
-ub = 10
-df2_normalized = compute_all_substitutes(n, ub; normalize=true)
-df2_not_normalized = compute_all_substitutes(n, ub; normalize=false)
-@time df3 = compute_all_substitutes(n+1, ub)
-@time df3_alt = merge_vectors(n+1, df2_normalized, df2_not_normalized)
+# function create_valuation_fn(values::Vector{Int})
+#     n = round(Int, log(2, length(values)))  # number of goods
+#     d = Dict(Set(Φ) => i for (i, Φ) ∈ enumerate(powerset(1:n)))
+#     function valuation(Φ::Set{Int})
+#         @assert Φ ⊆ 1:n "Φ must be a subset of agents 1 to n."
+#         return values[d[Φ]]
+#     end
+#     return valuation
+# end

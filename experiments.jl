@@ -51,6 +51,7 @@ function generate_all_valuations(trades::Vector{Tuple{Int, Int}}, n::Int, vL::In
 end
 
 
+### Exploration functions ###
 """
 Given a fixed network specified by Ω, agents 1 to n, and a dictionary
 mapping each agent to a ValuationIterator, iterate over all possible valuations
@@ -102,6 +103,9 @@ function explore_network_randomly(Ω, AgentIterators, ub, action_function; reps=
     return nothing
 end
 
+
+### Functions for visualising markets and their properties
+
 """
 Print a valuation function for given trades.
 """
@@ -129,6 +133,28 @@ function print_welfare_fn(w, trades)
     return nothing
 end
 
+
+function diagnose(market)
+    welfare_fn = generate_welfare_fn(market)
+    println("Market with $(market.n) agents and $(market.m) trades.")
+    println("Market value is $(welfare_fn(collect(1:market.n))).")
+    println("Market network is given by Ω = $(market.Ω).")
+    println("Now printing valuations.")
+    for (i, v) in enumerate(market.valuation)
+        println("For agent $i:")
+        print_valuation(v, associated_trades(i, market.Ω))
+        println()
+    end
+    println("Welfare function:")
+    print_welfare_fn(welfare_fn, 1:market.m)
+    leximin_sol = find_optimal_core_imputation(market.n, welfare_fn, :leximin)
+    leximax_sol = find_optimal_core_imputation(market.n, welfare_fn, :leximax)
+    println("Leximin solution: $(leximin_sol)")
+    println("Leximax solution: $(leximax_sol)")
+end
+
+
+### Lots of action functions
 
 """
 This function checks if the minimum variance, leximin, and leximax solutions
@@ -170,25 +196,10 @@ function nonemptycore(market, welfare)
     return true
 end
 
-
-function diagnose(market)
-    welfare_fn = generate_welfare_fn(found)
-    println("Market with $(market.n) agents and $(market.m) trades.")
-    println("Market network is given by Ω = $(Ω).")
-    println("Now printing valuations.")
-    for (i, v) in enumerate(found.valuation)
-        println("For agent $i:")
-        print_valuation(v, associated_trades(i, found.Ω))
-        println()
-    end
-    println("Welfare function:")
-    print_welfare_fn(welfare_fn, 1:found.m)
-end
-
 """
 Return true iff leximin == leximax (up to atol).
 """
-function leximin_vs_max(market, welfare_fn; atol=0.0001)
+function leximin_vs_max(market, welfare_fn; atol=0.001)
     leximin_sol = find_optimal_core_imputation(market.n, welfare_fn, :leximin)
     leximax_sol = find_optimal_core_imputation(market.n, welfare_fn, :leximax)
     return all( abs.(leximin_sol .- leximax_sol) .≤ atol )
@@ -215,9 +226,24 @@ function hasessentialagents(market, welfare_fn; atol=0.0001)
     return length(essentialagents(market, welfare_fn)) > 0
 end
 
-# TODO: add some action functions according to section 7
-# TODO: create loop over all graphs
-# TODO: write functions "isdemanded" and "isCE"
+
+
+"""
+    leximinCE(market, welfare_fn)
+
+Returns true if there exists a CE that achieves the utility of the leximin core
+outcome for each agent.
+"""
+function leximinCE(market, welfare_fn)
+    leximin_sol = find_optimal_core_imputation(market.n, welfare_fn, :leximin)
+    leximin_sol = round.(leximin_sol, digits=5)
+    p = find_competitive_equilibrium_prices(market::Market, leximin_sol)
+    !isnothing(p)
+end
+
+leximinCE(market) = leximinCE(market, generate_welfare_fn(market))
+
+
 
 # # Example 0:
 # Generate all non-isomorphic directed graphs with 3 nodes
@@ -260,50 +286,16 @@ end
 # end
 
 
-# # Example 4:
-# ub = 2
-# AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
-# Ω = [(1,2), (1,3), (3,2)]
-# found = nothing
-# found = explore_network(Ω, AgentIterators, ub, leximin_vs_max);
-# isnothing(found) || diagnose(found)
+# Example 4:
+ub = 2
+AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
+Ω = [(1,2), (1,3), (3,2)]
+found = nothing
+found = explore_network(Ω, AgentIterators, ub, leximin_vs_max);
+isnothing(found) || diagnose(found)
 
 
-
-# Questions: are there substitutes markets with positive market value in which all agents are inessential?
-
-# Example 5:
-# ub = 3
-# AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
-# Ω = [(1,3), (2,3), (1,4), (2,4)]
-# found = nothing
-# found = explore_network(Ω, AgentIterators, ub, hasessentialagents);
-# isnothing(found) || diagnose(found)
-
-
-# Failed attempt to manually create an example with positive market value and no essential agents
-# Ω = [(1,3), (1,4), (2,3), (2,4)]
-# function buyer_valuation(Φ::Set{Int})
-#     length(Φ) == 0 && return 0
-#     length(Φ) == 1 && return 3
-#     length(Φ) == 2 && return 4
-# end
-
-# function seller_valuation(Φ::Set{Int})
-#     length(Φ) == 0 && return 0
-#     length(Φ) == 1 && return -1
-#     length(Φ) == 2 && return -4
-# end
-# valuations = [buyer_valuation, buyer_valuation, seller_valuation, seller_valuation]
-# market = Market(Ω, valuations)
-# w = generate_welfare_fn(market)
-# print_welfare_fn(w, 1:4)
-
-# Idea: we could write a SymmetricValuations iterator, for which all bundles of the same cardinality have the same value?
-
-
-# Example X:
-# # Ω = [(1,3), (1,4), (2,3)]
+# Example 5: example of market in which leximin gives 0 utility to an essential agent
 # Ω = [(1,3), (1,4), (2,3), (2,4)]
 # ub = 10
 # AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
@@ -316,16 +308,46 @@ end
 # diagnose(found)
 
 
-# Example 11:
-# Ω = [(1,3), (1,4), (2,3)]
-Ω = [(1,2), (1,2), (3,1)]
-n = 3
+# # Example 11:
+# # Ω = [(1,3), (1,4), (2,3)]
+# Ω = [(1,2), (1,2), (3,1)]
+# n = 3
+# ub = 15
+# AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
+# found = nothing
+# found = explore_network_randomly(Ω, AgentIterators, ub, positiveleximin, reps=30);
+# isnothing(found) || diagnose(found)
+# essentialagents(found)
+# w = generate_welfare_fn(found)
+# find_optimal_core_imputation(n, w, :leximin)
+# diagnose(found)
+
+
+# # Example 12: 
+# Ω = [(1,2), (1,2), (3,1)]
+# n = 3
+# ub = 5
+# AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
+# found = nothing
+# found = explore_network_randomly(Ω, AgentIterators, ub, leximinCE, reps=30);
+# isnothing(found) || diagnose(found)
+# essentialagents(found)
+# diagnose(found)
+
+
+# TODO: add some action functions according to section 7
+# TODO: create loop over all graphs
+# TODO: write functions "isdemanded" and "isCE"
+
+
+# Example 13:
+# Ω = [(1,3), (1,4), (2,3), (2,4)]
+Ω = [(1,2), (2,1), (2,3), (1,3)]
+n = 2
 ub = 15
+# AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
 AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
 found = nothing
-found = explore_network_randomly(Ω, AgentIterators, ub, positiveleximin, reps=30);
+found = explore_network_randomly(Ω, AgentIterators, ub, leximin_vs_max, reps=30);
 isnothing(found) || diagnose(found)
 essentialagents(found)
-w = generate_welfare_fn(found)
-find_optimal_core_imputation(n, w, :leximin)
-diagnose(found)

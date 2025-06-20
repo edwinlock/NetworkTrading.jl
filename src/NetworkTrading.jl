@@ -26,6 +26,9 @@ export core_model, sorted_core_model, leximin_model, leximax_model, minvar_model
 export Powerset, length, eltype, SubmodularFunctionIterator, listall, SubmodularFunctions
 export SubstitutesValuations, AdditiveValuations, AllValuations
 export create_valuation_fn
+export find_competitive_equilibrium_prices, lyapunov_model, constrained_lyapunov_model
+export rand
+export SubstitutesValuations
 
 using PrecompileTools
 @compile_workload begin
