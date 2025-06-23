@@ -77,7 +77,7 @@ end
 
 
 # Try all possible welfare functions for n ∈ {3, 4} agents with values w(S) \leq ub.
-function sweep_agent_functions(n, ub; atol=10e-4)
+function sweep_agent_functions(n, ub; supermodularcheck::Bool=False, atol=10e-4)
     if n == 3
         all_values = generate_all_three_agent_values(ub=ub)
         create_agent_welfare_fn = create_three_agent_welfare_fn
@@ -93,6 +93,10 @@ function sweep_agent_functions(n, ub; atol=10e-4)
     @showprogress for w ∈ all_values
         @debug "Considering the welfare function values $w."
         w_fn = create_agent_welfare_fn(w)
+        if supermodularcheck && !issupermodular(w_fn, powerset(1:n))
+            @debug "The welfare function with values $w is not submodular."
+            continue
+        end
         minvar_sol = find_optimal_core_imputation(n, w_fn, :min_variance)
         # Skip loop iteration if core is empty
         if isnothing(minvar_sol)
@@ -106,20 +110,20 @@ function sweep_agent_functions(n, ub; atol=10e-4)
         @debug "minvar: $(minvar_sol)"
         @debug "leximin: $(leximin_sol)"
         @debug "leximax: $(leximax_sol)"
-        # if any(abs.(leximin_sol - leximax_sol) .≥ atol)
-        #     println("\nThe welfare function with values $w has different leximin and leximax values.")
-        #     println("Leximin: $(leximin_sol)")
-        #     println("Leximax: $(leximax_sol)")
-        #     println("   Mean: $(mean_sol)")
-        #     println(" Minvar: $(round.(minvar_sol, digits=3))")
-        # end
-        if any(abs.(mean_sol - minvar_sol) .≥ atol)
-            println("\nThe mean and minvar solutions are not the same.")
+        if any(abs.(leximin_sol - leximax_sol) .≥ atol)
+            println("\nThe welfare function with values $w has different leximin and leximax values.")
             println("Leximin: $(leximin_sol)")
             println("Leximax: $(leximax_sol)")
             println("   Mean: $(mean_sol)")
             println(" Minvar: $(round.(minvar_sol, digits=3))")
         end
+        # if any(abs.(mean_sol - minvar_sol) .≥ atol)
+        #     println("\nThe mean and minvar solutions are not the same.")
+        #     println("Leximin: $(leximin_sol)")
+        #     println("Leximax: $(leximax_sol)")
+        #     println("   Mean: $(mean_sol)")
+        #     println(" Minvar: $(round.(minvar_sol, digits=3))")
+        # end
         # if any(abs.(minvar_sol - leximin_sol) .≥ atol)
         #     println("The welfare function with values $w has different minvar and leximin values:")
         #     println("Minvar is $(minvar_sol) and leximax is $(leximin_sol).")
@@ -132,8 +136,8 @@ function sweep_agent_functions(n, ub; atol=10e-4)
     @info "Finished exploring. Encountered $feasible_instances feasible instances and $infeasible_instances infeasible instances."
 end
 
-sweep_agent_functions(3,10)
-sweep_agent_functions(4,4)
+sweep_agent_functions(3,10, supermodularcheck=true)
+#sweep_agent_functions(4,4)
 
 
 # function create_valuation_fn(values::Vector{Int})
