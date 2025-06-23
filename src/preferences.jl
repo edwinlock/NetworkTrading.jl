@@ -284,8 +284,8 @@ Uses definition 3 of submodularity in https://en.wikipedia.org/wiki/Submodular_s
 """
 function issubmodular(v, A)
     for Φvec ∈ A
-        Φ = Set(Φvec)
-        for (ω, χ) ∈ Iterators.combinations(collect(Φ), 2)
+        Φ = Φvec
+        for (ω, χ) ∈ Combinatorics.combinations(Φ, 2)
             if v(Φ) > v(setdiff(Φ, ω)) + v(setdiff(Φ, χ)) - v(setdiff(Φ, ω, χ))
                 @debug "Valuation function failed the submodularity property for Φ=$Φ, ω=$ω, and χ=$χ."
                 return false
@@ -306,8 +306,9 @@ Uses definition 3 of supermodularity in https://en.wikipedia.org/wiki/Submodular
 """
 function issupermodular(v, A)
     for Φvec ∈ A
-        Φ = Set(Φvec)
-        for (ω, χ) ∈ Iterators.combinations(collect(Φ), 2)
+        Φ = Φvec
+        #println("Checking supermodularity for Φ=$Φ")
+        for (ω, χ) ∈ Combinatorics.combinations(Φ, 2)
             if v(Φ) < v(setdiff(Φ, ω)) + v(setdiff(Φ, χ)) - v(setdiff(Φ, ω, χ))
                 @debug "Valuation function failed the supermodularity property for Φ=$Φ, ω=$ω, and χ=$χ."
                 return false
