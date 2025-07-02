@@ -97,6 +97,10 @@ function sweep_agent_functions(n, ub; supermodularcheck::Bool=False, atol=10e-4)
             @debug "The welfare function with values $w is not submodular."
             continue
         end
+        if !supermodularcheck && issupermodular(w_fn, powerset(1:n))
+            @debug "The welfare function with values $w is not submodular."
+            continue
+        end
         minvar_sol = find_optimal_core_imputation(n, w_fn, :min_variance)
         # Skip loop iteration if core is empty
         if isnothing(minvar_sol)
@@ -136,8 +140,8 @@ function sweep_agent_functions(n, ub; supermodularcheck::Bool=False, atol=10e-4)
     @info "Finished exploring. Encountered $feasible_instances feasible instances and $infeasible_instances infeasible instances."
 end
 
-sweep_agent_functions(3,10, supermodularcheck=true)
-#sweep_agent_functions(4,4)
+#sweep_agent_functions(3,10, supermodularcheck=true)
+sweep_agent_functions(3,20, supermodularcheck=false)
 
 
 # function create_valuation_fn(values::Vector{Int})
