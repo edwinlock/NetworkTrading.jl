@@ -251,3 +251,58 @@ function find_optimal_core_imputation(n::Int, w::Function, objective::Symbol)
     is_solved_and_feasible(model) && return value.(x)
     return nothing
 end
+
+
+"""
+    oxs_model(n::Int, w::Function)
+
+Create Gurobi model for the OXS optimization problem:
+
+min     dummy objective (set to zero)
+s.t.    ∑_{x∈S} a(S,x) = w(S),  ∀S⊆I, x∈I
+        ∑_{x∈S} a(S,x) ≤ ∑_{x∈S} a(T,x),  ∀S,T⊂I
+
+Returns model and variables a.
+"""
+function oxs_model(n::Int, w::Function)
+    model = Model(Optimizer)
+    
+    # Generate all subsets of I = {1, 2, ..., n}
+    all_subsets = collect.(powerset(1:n))
+    
+    # Decision variables: a(S,x) for each subset S and element x ∈ I
+    @variable(model, a[S ∈ all_subsets, x ∈ 1:n] ≥ 0)
+    
+    # Objective: empty (set to zero)
+    @objective(model, Min, 0)
+    
+    # Constraint 1: ∑_{x∈S} a(S,x) = w(S) for all S⊆I
+    @constraint(model, balance[S ∈ all_subsets], 
+                sum(a[S, x] for x ∈ S) == w(S))
+    
+    # Constraint 2: ∑_{x∈S} a(S,x) ≤ ∑_{x∈S} a(T,x) for all S,T⊂I
+    proper_subsets = filter(S -> length(S) > 0 && length(S) < n, all_subsets)
+    @constraint(model, ordering[S ∈ proper_subsets, T ∈ proper_subsets], 
+                sum(a[S, x] for x ∈ S) ≤ sum(a[T, x] for x ∈ S))
+    
+    return model, a
+end
+
+"""
+    solve_oxs(n::Int, w::Function)
+
+Solve the OXS optimization problem and return the optimal solution.
+"""
+function solve_oxs(n::Int, w::Function)
+    model, a = oxs_model(n, w)
+    set_silent(model)
+    set_optimizer_attribute(model, "OutputFlag", 0)
+    
+    optimize!(model)
+    
+    if is_solved_and_feasible(model)
+        return value.(a), objective_value(model)
+    else
+        return nothing, nothing
+    end
+end
