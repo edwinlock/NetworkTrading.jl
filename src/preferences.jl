@@ -203,26 +203,26 @@ function generate_random_two_trade_valuation(m::Int, n::Int, i, Ω)
 end
 
 
-"""
-Generate Lyapunov function of the object-based market equivalent.
-"""
-function generate_lyapunov_function(market)
-    n, m, Ω = market.n, market.m, market.Ω
-    utils = [
-        (p, Φ) -> market.valuation[i](τ(Φ, i, Ω)) - sum(p[ω] for ω ∈ Φ; init=0) 
-            for i ∈ 1:n
-    ]
-    all_bundles = [all_sets(i, Ω) for i ∈ 1:n]
-    function L(p)
-        buyer_contribution = sum(
-            maximum(Φ -> utils[i](p, Φ), all_bundles[i])
-                for i ∈ 1:n
-        )
-        seller_contribution = sum(p[ω] for ω ∈ 1:m)
-        return buyer_contribution + seller_contribution
-    end
-    return L
-end
+# """
+# Generate Lyapunov function of the object-based market equivalent.
+# """
+# function generate_lyapunov_function(market)
+#     n, m, Ω = market.n, market.m, market.Ω
+#     utils = [
+#         (p, Φ) -> market.valuation[i](τ(Φ, i, Ω)) - sum(p[ω] for ω ∈ Φ; init=0) 
+#             for i ∈ 1:n
+#     ]
+#     all_bundles = [all_sets(i, Ω) for i ∈ 1:n]
+#     function L(p)
+#         buyer_contribution = sum(
+#             maximum(Φ -> utils[i](p, Φ), all_bundles[i])
+#                 for i ∈ 1:n
+#         )
+#         seller_contribution = sum(p[ω] for ω ∈ 1:m)
+#         return buyer_contribution + seller_contribution
+#     end
+#     return L
+# end
 
 
 
@@ -401,11 +401,10 @@ prices correspond to the minimisers of the Lyapunov function.
 """
 function generate_lyapunov_function(market::Market)
     n = market.n
-    @assert i ∈ 1:n  "i must be a market agent."
 
     Ω = market.Ω
-    demands = market.demand[i]
-    utilities = market.utility[i]
+    demands = market.demand
+    utilities = market.utility
 
     function L(p)
         return sum( indirect_utility(p, demands[i], utilities[i]) for i ∈ 1:n; init=0)

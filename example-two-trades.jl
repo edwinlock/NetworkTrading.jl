@@ -13,7 +13,6 @@ offers = [
 ]
 market = Market(Ω, offers, valuation)
 steps, data = @time dynamic(market)
-# plot_offers(market, data)
-# plot_satisfied(market, data)
-# plot_welfare(market, data)
-plot_lyapunov(market, data)
+plot_offers(market, data)
+plot_satisfied(market, data)
+plot_welfare(market, data)

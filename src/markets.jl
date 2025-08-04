@@ -1,4 +1,4 @@
-struct Market{V<:Function,U<:Function,D<:Function}
+struct Market{V<:Function, U<:Function, D<:Function}
     n::Int  # number of agents
     m::Int  # number of trades
     Ω::Vector{Tuple{Int,Int}}  # list of trades given as ordered pairs (seller, buyer)
