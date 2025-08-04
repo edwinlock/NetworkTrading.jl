@@ -97,6 +97,10 @@ function sweep_agent_functions(n, ub; supermodularcheck::Bool=False, atol=10e-4)
             @debug "The welfare function with values $w is not submodular."
             continue
         end
+        if !supermodularcheck && issupermodular(w_fn, powerset(1:n))
+            @debug "The welfare function with values $w is not submodular."
+            continue
+        end
         minvar_sol = find_optimal_core_imputation(n, w_fn, :min_variance)
         # Skip loop iteration if core is empty
         if isnothing(minvar_sol)
@@ -104,8 +108,8 @@ function sweep_agent_functions(n, ub; supermodularcheck::Bool=False, atol=10e-4)
             continue
         end
         feasible_instances += 1
-        leximin_sol = find_optimal_core_imputation(n, w_fn, :leximin)
-        leximax_sol = find_optimal_core_imputation(n, w_fn, :leximax)
+        leximin_sol = round.(find_optimal_core_imputation(n, w_fn, :leximin), digits=2)
+        leximax_sol = round.(find_optimal_core_imputation(n, w_fn, :leximax), digits=2)
         mean_sol = (leximin_sol + leximax_sol) / 2
         @debug "minvar: $(minvar_sol)"
         @debug "leximin: $(leximin_sol)"
@@ -115,7 +119,7 @@ function sweep_agent_functions(n, ub; supermodularcheck::Bool=False, atol=10e-4)
             println("Leximin: $(leximin_sol)")
             println("Leximax: $(leximax_sol)")
             println("   Mean: $(mean_sol)")
-            println(" Minvar: $(round.(minvar_sol, digits=3))")
+            println(" Minvar: $(round.(minvar_sol, digits=2))")
         end
         # if any(abs.(mean_sol - minvar_sol) .≥ atol)
         #     println("\nThe mean and minvar solutions are not the same.")
@@ -136,8 +140,8 @@ function sweep_agent_functions(n, ub; supermodularcheck::Bool=False, atol=10e-4)
     @info "Finished exploring. Encountered $feasible_instances feasible instances and $infeasible_instances infeasible instances."
 end
 
-sweep_agent_functions(3,10, supermodularcheck=true)
-#sweep_agent_functions(4,4)
+sweep_agent_functions(4,5, supermodularcheck=true)
+#sweep_agent_functions(4,3, supermodularcheck=false)
 
 
 # function create_valuation_fn(values::Vector{Int})
