@@ -328,3 +328,88 @@ function create_valuation_fn(values::Vector{Int})
     end
     return valuation
 end
+
+
+
+
+
+"""
+    generate_lyapunov_function(market, i)
+
+Generate the individual Lyapunov function ``L^i(p)`` for agent `i`.
+
+The function computes the indirect utility minus the net payment for agent `i`:
+
+```math
+L^i(p) = u^i(p) - \\sum_{\\omega \\in \\Omega_i} \\chi^i_\\omega p_\\omega
+```
+
+Where:
+- ``u^i(p)`` is the indirect utility of agent `i` at prices `p`
+- ``\\Omega_i`` are the trades involving agent `i`
+- ``\\chi^i_\\omega`` is the characteristic function (+1 if buyer, -1 if seller, 0 otherwise)
+- ``p_\\omega`` is the price of trade ``\\omega``
+
+# Arguments
+- `market::Market`: The market structure
+- `i::Int`: Agent index (must be in 1:n)
+
+# Returns
+- Function that takes price vector `p` and returns ``L^i(p)``
+"""
+function generate_lyapunov_function(market::Market, i)
+    n = market.n
+    @assert i ∈ 1:n  "i must be a market agent."
+
+    Ω = market.Ω
+    demand = market.demand[i]
+    utility = market.utility[i]
+    trades = market.trades[i]
+    
+    function Li(p)
+        u = indirect_utility(p, demand, utility)
+        inandout = sum(χ(i, ω, Ω)*p[ω] for ω ∈ trades; init=0)
+        return u - inandout
+    end
+
+    return Li
+end
+
+"""
+    generate_lyapunov_function(market::Market)
+
+Generate the aggregate Lyapunov function ``L(p)`` for the entire market.
+
+The function computes the sum of indirect utilities across all agents:
+
+```math
+L(p) = \\sum_{i=1}^n u^i(p)
+```
+
+Where:
+- ``u^i(p)`` is the indirect utility of agent `i` at prices `p`
+- `n` is the total number of agents in the market
+
+This function is used in competitive equilibrium analysis, where equilibrium 
+prices correspond to the minimisers of the Lyapunov function.
+
+# Arguments
+- `market::Market`: The market structure containing all agents
+
+# Returns
+- Function that takes price vector `p` and returns the aggregate ``L(p)``
+"""
+function generate_lyapunov_function(market::Market)
+    n = market.n
+    @assert i ∈ 1:n  "i must be a market agent."
+
+    Ω = market.Ω
+    demands = market.demand[i]
+    utilities = market.utility[i]
+
+    function L(p)
+        return sum( indirect_utility(p, demands[i], utilities[i]) for i ∈ 1:n; init=0)
+    end
+
+    return L
+end

@@ -1,11 +1,11 @@
-struct Market
+struct Market{V<:Function,U<:Function,D<:Function}
     n::Int  # number of agents
     m::Int  # number of trades
     Ω::Vector{Tuple{Int,Int}}  # list of trades given as ordered pairs (seller, buyer)
     trades::Vector{Set{Int}}  # set of trades for each agent
-    valuation::Vector{Function}  # for each agent, a valuation function
-    utility::Vector{Function}  # for each agent, a utility function
-    demand::Vector{Function}  # for each agent a demand function
+    valuation::Vector{V}  # for each agent, a valuation function
+    utility::Vector{U}  # for each agent, a utility function
+    demand::Vector{D}  # for each agent a demand function
 end
 
 struct DynamicState
