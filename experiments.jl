@@ -287,12 +287,12 @@ leximinCE(market) = leximinCE(market, generate_welfare_fn(market))
 
 
 # Example 4:
-ub = 2
-AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
-Ω = [(1,2), (1,3), (3,2)]
-found = nothing
-found = explore_network(Ω, AgentIterators, ub, leximin_vs_max);
-isnothing(found) || diagnose(found)
+# ub = 2
+# AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
+# Ω = [(1,2), (1,3), (3,2)]
+# found = nothing
+# found = explore_network(Ω, AgentIterators, ub, leximin_vs_max);
+# isnothing(found) || diagnose(found)
 
 
 # Example 5: example of market in which leximin gives 0 utility to an essential agent
@@ -340,13 +340,26 @@ isnothing(found) || diagnose(found)
 # TODO: write functions "isdemanded" and "isCE"
 
 
-# Example 13:
+# # Example 13:
+# Ω = [(1,3), (1,4), (2,3), (2,4)]
+# Ω = [(1,2), (2,1), (2,3), (1,3)]
+# n = 2
+# ub = 15
+# # AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
+# AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
+# found = nothing
+# found = explore_network_randomly(Ω, AgentIterators, ub, leximin_vs_max, reps=30);
+# isnothing(found) || diagnose(found)
+# essentialagents(found)
+
+
+ # Example 14:
 # Ω = [(1,3), (1,4), (2,3), (2,4)]
 Ω = [(1,2), (2,1), (2,3), (1,3)]
-n = 2
+n = 3
 ub = 15
 # AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
-AgentIterators = [SubstitutesValuations, SubstitutesValuations, SubstitutesValuations]
+AgentIterators = [AdditiveValuations, AdditiveValuations, AdditiveValuations]
 found = nothing
 found = explore_network_randomly(Ω, AgentIterators, ub, leximin_vs_max, reps=30);
 isnothing(found) || diagnose(found)

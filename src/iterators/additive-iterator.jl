@@ -68,10 +68,32 @@ function construct_valuation(iter::AdditiveValuations, state::Int)
     return valuation
 end
 
-function Base.getindex(iter::AdditiveValuations, i) 
+function Base.getindex(iter::AdditiveValuations, i::Int) 
     0 <= i <= iter.numvals-1 || throw(BoundsError(iter, i))
     return construct_valuation(iter, i)
 end
 
+function Base.getindex(iter::AdditiveValuations, idx::Vector{Int})
+    idx ⊆ 0:iter.numvals-1 || throw(BoundsError(iter, idx))
+    return [ construct_valuation(iter, i) for i ∈ idx ]
+end
+
 Base.firstindex(iter::AdditiveValuations) = 0
 Base.lastindex(iter::AdditiveValuations) = length(iter)-1
+
+function Random.rand(rng::Random.AbstractRNG, iter::AdditiveValuations)
+    idx = rand(rng, 1:length(iter))
+    return iter[idx]
+end
+
+# Convenience method that uses the default RNG
+Random.rand(iter::AdditiveValuations) = rand(Random.default_rng(), iter)
+
+# Function for returning multiple
+function Random.rand(rng::Random.AbstractRNG, iter::AdditiveValuations, n::Int)
+    idx = rand(rng, 1:length(iter), n)
+    return iter[idx]
+end
+
+# Convenience method that uses the default RNG
+Random.rand(iter::AdditiveValuations, n::Int) = rand(Random.default_rng(), iter, n)
