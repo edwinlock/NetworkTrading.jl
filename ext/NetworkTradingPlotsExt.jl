@@ -3,7 +3,11 @@ module NetworkTradingPlotsExt
 using NetworkTrading
 using Plots
 
-function NetworkTrading.plot_offers(market, data)
+# Import the stub functions to extend them
+import NetworkTrading: plot_offers, plot_satisfied, plot_welfare, plot_lyapunov, 
+                       plot_aggr_lyapunov, plotLIP!, plotLIP, draw_arrow!
+
+function plot_offers(market, data)
     xlabel, ylabel = "Steps", "Offer"
     numoffers = 2*length(market.Ω)
     numsteps = length(data.offers)
@@ -21,7 +25,7 @@ function NetworkTrading.plot_offers(market, data)
     plot(xs, ys, xlabel=xlabel, ylabel=ylabel, labels=labels, lw=3, legend=:outerbottom)
 end
 
-function NetworkTrading.plot_satisfied(market, data)
+function plot_satisfied(market, data)
     xlabel, ylabel = "Steps", "#Satisfied"
     numsteps = length(data.offers)
     xs = 1:numsteps
@@ -30,7 +34,7 @@ function NetworkTrading.plot_satisfied(market, data)
     # scatter!(xs, ys, xlabel=xlabel, ylabel=ylabel, legend=false, lw=3, xticks=xs, yticks=ys, grid=false)
 end
 
-function NetworkTrading.plot_welfare(market, data)
+function plot_welfare(market, data)
     xlabel, ylabel = "Steps", "Welfare"
     numsteps = length(data.offers)
     xs = 1:numsteps
@@ -43,7 +47,7 @@ end
 Plot the trajectory of the Lyapunov function for each agent using the agents'
 offers as prices.    
 """
-function NetworkTrading.plot_lyapunov(market, data)
+function plot_lyapunov(market, data)
     n = market.n
     xlabel, ylabel = "Step", "Lyapunov"
     numsteps = length(data.offers)
@@ -75,7 +79,7 @@ end
 Plot the trajectory of the Lyapunov function for each agent using the agents'
 offers as prices.    
 """
-function NetworkTrading.plot_aggr_lyapunov(market, data)
+function plot_aggr_lyapunov(market, data)
     n = market.n
     xlabel, ylabel = "Step", "Lyapunov"
     numsteps = length(data.offers)
@@ -107,7 +111,7 @@ end
 Draw LIP of valuation with valuation points a and b in a bounding box of size
 (m+2, n+2).
 """
-function NetworkTrading.plotLIP!(plt, a::Vector, b::Vector, m, n; color=Symbol)
+function plotLIP!(plt, a::Vector, b::Vector, m, n; color=Symbol)
     # diagonal line
     plot!(plt,
         [a[1], b[1]],
@@ -133,13 +137,13 @@ function NetworkTrading.plotLIP!(plt, a::Vector, b::Vector, m, n; color=Symbol)
     plot!(plt, [b[1], b[1]], [b[2], n+1], color=color, linewidth=3)
 end
 
-function NetworkTrading.plotLIP(a, b, m, n; color)
+function plotLIP(a, b, m, n; color)
     plt = plot()
     NetworkTrading.plotLIP!(plt, a, b, m, n; color=color)
     return plt
 end
 
-function NetworkTrading.draw_arrow!(plt, point, direction)
+function draw_arrow!(plt, point, direction)
     scaling_factor = 0.5
     endpoint = point .+ (scaling_factor .* direction)
     plot!(plt,

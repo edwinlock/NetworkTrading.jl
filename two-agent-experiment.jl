@@ -1,6 +1,5 @@
 using Revise
 using NetworkTrading
-using LazySets
 using Plots
 
 # gr(size = (1000, 600))

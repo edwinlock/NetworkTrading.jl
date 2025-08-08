@@ -7,7 +7,7 @@ The main aim of this code is to help us figure out a potential function.
 using Revise  # so we don't keep having to reload the package
 using NetworkTrading
 using Plots
-plotlyjs()
+# plotlyjs()  # optional backend
 
 # Create the market network
 Ω = [(1,2), (1,2)]
@@ -19,7 +19,7 @@ valuation = [
     generate_random_two_trade_valuation(valmax, valmax, 2, Ω),
 ]
 
-# Create the market
+# Create the market
 market = Market(Ω, valuation)
 
 # Generate random offers
@@ -29,14 +29,14 @@ offers = [
 ]
 
 # Create dynamic state with initial offers
-ds = DynamicState(offers, Set{Int}([1, 2]))
+ds = DynamicState(market, offers)
 
 # Run the dynamics
 steps, data = dynamic(market, ds)
 
 # Construct the (partial) Lyapunov functions L^2 and L^2
-L1 = generate_lyapunov_function(market, 1)
-L2 = generate_lyapunov_function(market, 2)
+L1 = generate_lyapunov_function(market)
+L2 = generate_lyapunov_function(market)
 
 # For agent 1, we want to plot L1 at prices set to her offers in odd-numbered rounds.
 rounds1 = 1:2:steps
