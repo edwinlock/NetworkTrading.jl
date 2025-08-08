@@ -129,7 +129,7 @@ Compute welfare (aggregate utility) of market with specified offers.
 function welfare(market::Market, offers)
     welfare_sum = 0
     for i in 1:market.n
-        p = neighbouring_offers(i, offers, market)
+        p = neighbouring_offers(i, market, offers)
         welfare_sum += indirect_utility(p, market.demand[i], market.utility[i])
     end
     return welfare_sum
