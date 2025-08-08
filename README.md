@@ -8,7 +8,15 @@ A Julia package for modeling and analyzing dynamic trading networks with multipl
 
 Download and install Julia from [julialang.org](https://julialang.org/downloads/). This package requires Julia 1.8 or later.
 
-### 2. Install the Package
+### 2. Install Gurobi
+
+This package requires Gurobi for optimization. Install Gurobi and obtain a license:
+
+1. Download Gurobi from [gurobi.com](https://www.gurobi.com/downloads/)
+2. Get a license (academic licenses are free at [gurobi.com/academia](https://www.gurobi.com/academia/))
+3. Follow Gurobi's installation instructions for your platform
+
+### 3. Install the Package
 
 #### As a User
 ```julia
