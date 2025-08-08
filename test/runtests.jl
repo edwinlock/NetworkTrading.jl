@@ -20,4 +20,25 @@ using Test
     @testset "Plotting Extension" begin
         include("test_plotting_extension.jl")
     end
+    
+    # Comprehensive test suites
+    @testset "Comprehensive Market Tests" begin
+        include("test_comprehensive_markets.jl")
+    end
+    
+    @testset "Comprehensive Dynamics Tests" begin  
+        include("test_comprehensive_dynamics.jl")
+    end
+    
+    @testset "Comprehensive Edge Cases" begin
+        include("test_comprehensive_edge_cases.jl")
+    end
+    
+    @testset "Comprehensive Valuation Tests" begin
+        include("test_comprehensive_valuations.jl")
+    end
+    
+    @testset "Network Structure Tests" begin
+        include("test_network_structures.jl")
+    end
 end
