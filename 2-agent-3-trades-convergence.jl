@@ -9,25 +9,26 @@ using NetworkTrading
 using Plots
 # plotlyjs()  # optional backend
 using ProgressMeter
+using PrettyTables
 
 
 # Create the market network
-Ω = [(1,2), (1,2)]
+Ω = [(1,2), (1,2), (1,2)]
 
 # Generate random valuations for the two agents
-valmax = 30
-valuation = [
-    generate_random_two_trade_valuation(valmax, valmax, 1, Ω),
-    generate_random_two_trade_valuation(valmax, valmax, 2, Ω),
-]
+valmax = 15
+subsiters = [SubstitutesValuations(buying_trades(i, Ω), selling_trades(i, Ω), valmax)
+                for i ∈ 1:2
+            ]
+valuation = [ rand(subsiters[i]) for i ∈ 1:2 ]
 
 # Create the market
 market = Market(Ω, valuation)
 
-# Generate random offers
+# Generate random offers between 1 and valmax
 offers = [
-    Dict(1 => rand(0:valmax), 2 => rand(0:valmax)),
-    Dict(1 => rand(0:valmax), 2 => rand(0:valmax))
+    Dict(key => rand(0:valmax) for key ∈ market.trades[i])
+        for i ∈ 1:2
 ]
 
 # Create dynamic state with initial offers and unsatisfied agents
@@ -66,27 +67,65 @@ steps, data = dynamic(market, ds)
 # display(current())
 
 
-# function Φ(market, offers; λ = 1.0)
-#     Ω, n, m = market.Ω, market.n, market.m
-#     # Compute best responses for all agents
-#     BRs = [best_response(i, market, offers) for i ∈ 1:n]
-#     # Compute contribution to Φ(σ) from each trade, and sum them up
-#     diffs = 0.0
-#     for ω ∈ 1:m
-#         b = buyer(ω, Ω)
-#         s = seller(ω, Ω)
-#         diff = abs(offers[b][ω] - BRs[b][ω]) + abs(offers[s][ω] - BRs[s][ω])
-#         diffs += λ^(m - ω) * diff
-#     end
-#     return diffs
-# end
+function Φ(market, offers; λ = 1.0)
+    Ω, n, m = market.Ω, market.n, market.m
+    # Compute best responses for all agents
+    BRs = [best_response(i, market, offers) for i ∈ 1:n]
+    # Compute contribution to Φ(σ) from each trade, and sum them up
+    diffs = 0.0
+    for ω ∈ 1:m
+        b = buyer(ω, Ω)
+        s = seller(ω, Ω)
+        diff = abs(offers[b][ω] - BRs[b][ω]) + abs(offers[s][ω] - BRs[s][ω])
+        diffs += λ^(m - ω) * diff
+    end
+    return diffs
+end
 
-# xs = eachindex(data.offers)
-# # ys = [Φ(market, data.offers[i], λ=1.0) for i ∈ xs]
-# zs = [Φ(market, data.offers[i], λ=market.m+1) for i ∈ xs]
-# plot(xs, zs)
+xs = eachindex(data.offers)
+zs = [Φ(market, data.offers[i]) for i ∈ xs]
+plot!(xs, zs, xticks=xs, yticks=0:maximum(zs))
 
-# display(current())
+display(current())
+
+function print_all_offers(market, offers)
+    num_rounds = length(offers)
+    row_labels = ["Trade $(i)" for i ∈ 1:market.m]
+    header = string.(repeat([2, 1], 1 + num_rounds ÷ 2)[1:num_rounds+1])
+    header = (
+        string.(0:num_rounds),
+        string.(repeat([2, 1], 1 + num_rounds ÷ 2)[1:num_rounds+1])
+    )
+
+    table_data = zeros(Int, market.m, num_rounds+1)
+
+    # The 0th row:
+    for ω ∈ 1:market.m
+        table_data[ω, 1] = offers[1][2][ω]
+    end
+    # The remaining rows
+    for round ∈ 1:num_rounds
+        agent = 2 - round % 2
+        for ω ∈ 1:market.m
+            table_data[ω, round+1] = offers[round][agent][ω]
+        end
+    end
+
+    function field_unchanged(data, i, j)
+        j ≤ 2 && return false
+        data[i,j] == data[i,j-1] && return true
+        return false
+    end
+
+    return pretty_table(
+        table_data;
+        header=header,
+        row_labels=row_labels,
+        highlighters = Highlighter(field_unchanged, crayon"bg:(100,100,100)")
+    )
+end
+
+print_all_offers(market, data.offers)
 
 
 function norm(offers, others)
@@ -173,6 +212,6 @@ end
 
 xs = eachindex(data.offers)
 zs = [μ(data.offers[i]) for i ∈ xs]
-plot(xs, zs, xticks=xs, yticks=0:maximum(zs))
+plot!(xs, zs, xticks=xs, yticks=0:maximum(zs))
 
 display(current())

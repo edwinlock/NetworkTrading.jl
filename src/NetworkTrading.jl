@@ -10,10 +10,10 @@ include("iterators/substitutes-iterator.jl")
 include("iterators/additive-iterator.jl")
 include("iterators/all-valuations-iterator.jl")
 
-export Market, DynamicState, seller, buyer, isseller, isbuyer, associated_trades, incoming_trades, outgoing_trades, χ, counterpart, associated_agents
+export Market, Offers, DynamicState, seller, buyer, isseller, isbuyer, associated_trades, incoming_trades, outgoing_trades, χ, counterpart, associated_agents, buying_trades, selling_trades
 export BipartiteUnitMarket, RandomBipartiteUnitMarket, IntermediaryUnitMarket, RandomIntermediaryUnitMarket
 
-export neighbouring_offers, active_trades, welfare, updated_offers, best_response!, dynamic, indirect_utility
+export neighbouring_offers, active_trades, welfare, updated_offers, best_response, best_response!, dynamic, indirect_utility
 export isessential, essentialagents
 export generate_intermediary_demand, generate_intermediary_valuation, generate_utility, generate_unit_valuation, generate_unit_demand, generate_two_trade_valuation, generate_random_two_trade_valuation
 export generate_lyapunov_function, τ

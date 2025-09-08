@@ -39,9 +39,8 @@ Perform best response for agent i. Updates offers of the agent and
 the set of unsatisfied neighbours of the market.
 """
 function best_response!(i, market::Market, ds::DynamicState)
-    p = neighbouring_offers(i, market, ds.offers)
-    Ψ = market.demand[i](p)
-    newoffers = updated_offers(i, p, Ψ, market)
+    newoffers = best_response(i, market::Market, ds.offers)
+    # Determine all agents who are newly unsatisfied
     newly_unsatisfied = Set(
         counterpart(i, ω, market.Ω) for ω ∈ market.trades[i]
             if ds.offers[i][ω] ≠ newoffers[ω]
@@ -52,6 +51,13 @@ function best_response!(i, market::Market, ds::DynamicState)
     return nothing
 end
 
+
+function best_response(i, market::Market, offers)
+    p = neighbouring_offers(i, market, offers)
+    Ψ = market.demand[i](p)
+    newoffers = updated_offers(i, p, Ψ, market)
+    return newoffers
+end
 
 """
 Compute updated offers of agent i given market prices p and demanded bundle Ψ.

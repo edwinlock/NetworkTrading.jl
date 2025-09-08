@@ -1,3 +1,5 @@
+const Offers = Vector{Dict{Int,Int}}
+
 struct Market{V<:Function, U<:Function, D<:Function}
     n::Int  # number of agents
     m::Int  # number of trades
@@ -80,11 +82,13 @@ associated_trades(i, Ω) = associated_trades(i, 1:length(Ω), Ω)
 Compute incoming trades in Ω that are associated with agent i.
 """
 incoming_trades(i, Ω) = Set(ω for ω ∈ 1:length(Ω) if isbuyer(i, ω, Ω))
+buying_trades = incoming_trades
 
 """
 Compute outgoing trades in Ω that are associated with agent i.
 """
 outgoing_trades(i, Ω) = Set(ω for ω ∈ 1:length(Ω) if isseller(i, ω, Ω))
+selling_trades = outgoing_trades
 
 """
 Compute all agents involved in trades Φ of Ω.

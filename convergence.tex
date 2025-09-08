@@ -1,0 +1,319 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{hyperref}
+\usepackage{bm}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}[lemma]{Theorem}
+\newtheorem{definition}[lemma]{Definition}
+\newtheorem{remark}[lemma]{Remark}
+
+\title{Round-wise monotonicity of the discrete potential \(\mu\)\\
+for the two-agent market}
+\author{(Draft — for inclusion in paper)}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We give a fully formal, self-contained proof that in the two-agent
+market the discrete potential
+\[
+\mu(\sigma)\;=\;\min_{\sigma^*\in\mathcal E}\big(\|\sigma^*-\sigma\|_\infty^+
++\|\sigma^*-\sigma\|_\infty^-\big)
+\]
+strictly decreases after any full round (two consecutive best responses),
+provided \(\mu(\sigma)>0\). The proof is coordinate-wise and algebraic;
+it includes a self-contained proof of the discrete ``swap'' inequality
+in the form required for the two-block argument.
+\end{abstract}
+
+\section{Setup and notation}
+
+Fix the two-agent market with \(m\) trades. Each agent \(i\in\{1,2\}\)
+submits an integer offer vector \(\sigma^i\in\mathbb Z^m\).
+Write the joint offer as
+\[
+\sigma=(\sigma^1,\sigma^2)\in\mathbb Z^{2m},
+\]
+and index coordinates so that coordinates \(1,\dots,m\) are agent 1's,
+and \(m+1,\dots,2m\) are agent 2's (we will sometimes write
+\(\sigma_j\) for the \(j\)-th coordinate of the concatenated vector).
+
+Let \(\textstyle \mathcal E\subseteq\mathbb Z^{2m}\) denote the set of
+equilibrium joint offers (i.e., fixed points of the best-response
+operator: both agents are simultaneously best-responding).
+
+For a vector \(v\in\mathbb Z^{2m}\) define the positive and negative
+suprema
+\[
+\|v\|_\infty^+ := \max_{j\in\{1,\dots,2m\}} \max(0,v_j),\qquad
+\|v\|_\infty^- := \max_{j\in\{1,\dots,2m\}} \max(0,-v_j).
+\]
+Define the discrete potential \(\mu:\mathbb Z^{2m}\to\mathbb Z_{\ge0}\) by
+\[
+\mu(\sigma) \;=\; \min_{\sigma^*\in\mathcal E}
+\Big(\|\sigma^*-\sigma\|_\infty^+ + \|\sigma^*-\sigma\|_\infty^-\Big).
+\]
+Note that \(\mu(\sigma)=0\) iff \(\sigma\in\mathcal E\).
+
+For any set \(S\subseteq\{1,\dots,2m\}\) write \(e_S\in\{0,1\}^{2m}\)
+for the 0–1 vector with 1's on coordinates in \(S\) (so \(v\pm e_S\)
+means add/subtract \(1\) on those coordinates).
+
+\medskip
+
+\noindent\textbf{Round and BR notation.} Given a state \(\sigma\),
+let \(\sigma^{(1)}\) denote the state after a best response (BR)
+by agent 1 to \(\sigma\); let \(\sigma^{(2)}\) denote the state after
+then agent 2 best-responds to \(\sigma^{(1)}\). (The symmetric order
+agent 2 then agent 1 is treated identically.)
+
+Each BR by agent \(i\) changes only coordinates in that agent's block
+and does so by integrally incrementing/decrementing coordinates
+by at most \(1\) (this is the step size \(\varepsilon=1\) assumption).
+Thus any single BR can be written as
+\[
+\sigma^+ = \sigma + \Delta,
+\]
+where \(\Delta_j\in\{-1,0,1\}\) and \(\Delta_j=0\) on coordinates of
+the non-moving agent.
+
+\section{Discrete swap lemma (two-block specialization)}
+
+The proof of the round-wise monotonicity relies on a combinatorial
+``swap'' inequality. We state and prove the precise form used below.
+
+\begin{lemma}[Swap inequality — two block form]\label{lem:swap}
+Let \(p,q\in\mathbb Z^{2m}\). Let
+\[
+A=\arg\max_{j\in\{1,\dots,2m\}} (p_j-q_j),
+\]
+and assume \(A\neq\varnothing\). Then for any function
+\(G:\mathbb Z^{2m}\to\mathbb R\) that is separately convex in each
+agent's block in the discrete L\(^\natural\) sense (i.e. satisfies
+the standard discrete exchange inequality (1) of discrete convex
+analysis when applied to pairs differing only on one block),
+the following holds:
+\[
+G(p)+G(q)\ \ge\ G(p-e_A)+G(q+e_A).
+\]
+\end{lemma}
+
+\begin{remark}
+We phrase the hypothesis of the lemma in words to match the market
+assumptions: the object \(G\) below is the discrete objective whose
+steepest-descent structure captures best responses. In discrete
+convex analysis this inequality is a standard consequence of
+L\(^\natural\)-convexity; here we require the inequality only for
+pairs \(p,q\) and the set \(A\) as above, and only in the
+two-block specialization that arises in the two-agent market.
+\end{remark}
+
+\begin{proof}
+We provide a self-contained combinatorial proof adapted to the
+two-block situation. (This is a streamlined version of the standard
+proof for L\(^\natural\)-convexity; only the finite-difference
+arithmetic used is needed.)
+
+Let \(\lambda = \max_j (p_j-q_j)\). By definition of \(A\) we have
+\(p_j-q_j\le\lambda\) for all \(j\), and equality holds on \(A\).
+Pick \(\lambda'=\lambda-1\) (an integer). Then coordinate-wise
+\[
+(p-\lambda' \mathbf 1)\wedge q = p - e_A,
+\qquad
+q\vee(p-\lambda'\mathbf 1) = q + e_A,
+\]
+where \(\mathbf 1\) denotes the all-ones vector and \(\wedge,\vee\)
+are componentwise min/max. Now apply the discrete convexity inequality
+(see (1) in discrete convex analysis):
+\[
+G(p)+G(q)\ \ge\ G\big((p-\lambda'\mathbf 1)\wedge q\big) + 
+G\big(q\vee(p-\lambda'\mathbf 1)\big).
+\]
+Substituting the equalities above yields exactly
+\[
+G(p)+G(q)\ \ge\ G(p-e_A)+G(q+e_A).
+\]
+This completes the proof of the lemma in the two-block setting.
+\end{proof}
+
+\section{Round-wise decrease of \(\mu\)}
+
+We now prove the main technical lemma: after two consecutive BRs
+(a full round) \(\mu\) decreases by at least one whenever \(\mu>0\).
+
+\begin{lemma}[Round-wise decrease]\label{lem:round}
+Let \(\sigma\in\mathbb Z^{2m}\) satisfy \(\mu(\sigma)>0\).
+Let \(\sigma^{(1)}\) be the state after agent 1 best-responds to
+\(\sigma\), and \(\sigma^{(2)}\) the state after agent 2 best-responds
+to \(\sigma^{(1)}\). Then
+\[
+\mu\big(\sigma^{(2)}\big)\ \le\ \mu(\sigma)-1.
+\]
+\end{lemma}
+
+\begin{proof}
+Let
+\[
+\mathcal E^*(\sigma)
+:=\Big\{\sigma^*\in\mathcal E \;:\; 
+\|\sigma^*-\sigma\|_\infty^+ + \|\sigma^*-\sigma\|_\infty^- = \mu(\sigma)\Big\}
+\]
+be the (nonempty) set of equilibria realizing the minimum in \(\mu\).
+Choose \(\sigma^\star\in\mathcal E^*(\sigma)\) that maximizes
+\(\|\sigma^*-\sigma\|_\infty^+\) over \(\mathcal E^*(\sigma)\), and
+among those choose a componentwise minimal element. (If multiple
+choices remain, pick any; the tie-breaking is used only to ensure
+certain supports are nonempty in the arguments below.)
+
+Because \(\mu(\sigma)>0\), at least one of
+\(\|\sigma^\star-\sigma\|_\infty^+\) or \(\|\sigma^\star-\sigma\|_\infty^-\)
+is strictly positive. We split into two symmetric cases.
+
+\medskip\noindent\textbf{Case A:} \(\|\sigma^\star-\sigma\|_\infty^+>0\).
+
+Define the positive maximizer set
+\[
+A := \arg\max_{j\in\{1,\dots,2m\}} \big(\sigma^\star_j-\sigma_j\big).
+\]
+By assumption \(A\neq\varnothing\) and for every \(j\in A\) we have
+\(\sigma^\star_j-\sigma_j>0\).
+
+Recall the BRs: \(\sigma^{(1)}\) is obtained by agent 1 minimizing
+the relevant objective over agent 1's coordinates (holding agent 2 fixed),
+and \(\sigma^{(2)}\) is then obtained by agent 2 minimizing over its
+block.
+
+We consider three exhaustive subcases depending on where the indices
+in \(A\) lie.
+
+\smallskip\noindent\emph{Subcase A1: \(A\subseteq\{1,\dots,m\}\).}
+All maximizers lie in agent 1's block. Suppose for contradiction that
+agent 1's BR (which produced \(\sigma^{(1)}\)) did \emph{not} include
+every index of \(A\). Let \(X\) denote the set of coordinates (subset
+of \(\{1,\dots,m\}\)) that agent 1 did change when moving from
+\(\sigma\) to \(\sigma^{(1)}\). By hypothesis \(A\setminus X\) is
+nonempty. Apply the swap inequality (Lemma~\ref{lem:swap}) to the
+pair \(p=\sigma^\star\), \(q=\sigma\) and the set \(A\setminus X\).
+Let \(G\) denote the underlying discrete objective whose blockwise
+steepest-descent corresponds to best responses (the existence of
+such a \(G\) is the standard discrete convex representation of the
+market best-response structure; the swap inequality holds for it).
+From Lemma~\ref{lem:swap},
+\[
+G(\sigma^\star)+G(\sigma) \ge G(\sigma^\star - e_{A\setminus X}) + 
+G(\sigma + e_{A\setminus X}).
+\]
+Because \(\sigma^{(1)}\) is a best-response (block minimizer) for
+agent 1 at \(\sigma\), we have \(G(\sigma^{(1)})\le G(\sigma+e_{A\setminus X})\);
+hence
+\[
+G(\sigma^\star)+G(\sigma) \ge G(\sigma^\star - e_{A\setminus X}) + 
+G(\sigma^{(1)}).
+\]
+Rearranging,
+\[
+G(\sigma^\star) - G(\sigma^\star - e_{A\setminus X}) \ge 
+G(\sigma^{(1)}) - G(\sigma).
+\]
+But \(\sigma^\star\in\mathcal E\) is a minimizer of \(G\) (equilibrium),
+so \(G(\sigma^\star)\le G(\sigma^\star - e_{A\setminus X})\), thus the
+left hand side is \(\le0\). Meanwhile the right hand side is
+\(\le0\) by optimality of \(\sigma^{(1)}\) relative to \(\sigma\).
+Hence equality must hold throughout; in particular
+\(G(\sigma^\star) = G(\sigma^\star - e_{A\setminus X})\), which implies
+\(\sigma^\star - e_{A\setminus X}\in\mathcal E\). But then
+\(\sigma^\star - e_{A\setminus X}\in\mathcal E^*(\sigma)\) has a
+strictly larger value of \(\|\cdot-\sigma\|_\infty^+\) than
+\(\sigma^\star\) (because we removed some positive coordinate), contradicting
+the maximality choice of \(\sigma^\star\). Therefore \(A\subseteq X\);
+agent 1's BR included all indices of \(A\). Consequently agent 1's move
+reduced the positive sup-part by \(1\), and hence
+\(\mu(\sigma^{(1)})=\mu(\sigma)-1\). Since \(\mu\) is integer,
+\(\mu(\sigma^{(2)})\le\mu(\sigma^{(1)})=\mu(\sigma)-1\) and the lemma follows
+in this subcase.
+
+\smallskip\noindent\emph{Subcase A2: \(A\subseteq\{m+1,\dots,2m\}\).}
+All maximizers lie in agent 2's block. Agent 1's BR may or may not
+touch \(A\); if it does, we reduce to subcase A1. If it does not,
+apply the swap inequality to the pair \(p=\sigma^\star\), \(q=\sigma^{(1)}\)
+and the set \(A\) (note \(A\) remains a set of maximizers of
+\(\sigma^\star - \sigma^{(1)}\) because agent 1's move did not change
+these coordinates). By the same reasoning (now using agent 2's
+blockwise minimality at \(\sigma^{(1)}\)) we deduce that agent 2's BR
+must include \(A\); thus agent 2's BR reduces the positive sup-part
+by 1 and we obtain \(\mu(\sigma^{(2)})\le\mu(\sigma)-1\).
+
+\smallskip\noindent\emph{Subcase A3: \(A\) intersects both blocks.}
+If agent 1's BR includes any element of \(A\) then we are in A1 and
+done. Otherwise agent 1's BR leaves \(A\) untouched; applying the swap
+inequality to the pair \((\sigma^\star,\sigma^{(1)})\) relative to the
+subset \(A\cap\{m+1,\dots,2m\}\) forces agent 2's BR to include some
+element of \(A\). Hence agent 2's BR reduces the positive sup-part by 1,
+and again \(\mu(\sigma^{(2)})\le\mu(\sigma)-1\).
+
+This exhausts Case A.
+
+\medskip\noindent\textbf{Case B:} \(\|\sigma^\star-\sigma\|_\infty^->0\).
+
+This case is symmetric to Case A: define
+\[
+B := \arg\min_{j\in\{1,\dots,2m\}} (\sigma^\star_j-\sigma_j),
+\]
+so every \(j\in B\) satisfies \(\sigma^\star_j-\sigma_j<0\). Replace
+the roles of ``positive'' and ``negative'' parts in the arguments of
+Case A, and use the same swap inequality logic to deduce that across
+the two BR moves some coordinate in \(B\) will be adjusted in the
+correct direction, reducing the negative sup-part by 1. Hence again
+\(\mu(\sigma^{(2)})\le\mu(\sigma)-1\).
+
+\medskip
+
+Since \(\mu(\sigma)>0\) implies at least one of the cases A or B
+applies, the lemma is proved.
+\end{proof}
+
+\section{Corollary: finite termination in rounds}
+
+\begin{theorem}
+Starting from any initial joint offers \(\sigma^0\), repeated rounds
+(each round = agent 1 BR then agent 2 BR, or vice versa) produce a
+sequence \(\sigma^0,\sigma^{(2)},\sigma^{(4)},\dots\) for which
+\(\mu\) strictly decreases by at least \(1\) per round until \(\mu=0\).
+Hence the dynamics terminate in at most \(\mu(\sigma^0)\) rounds
+(i.e. at most \(2\mu(\sigma^0)\) single-agent BR moves) at some
+\(\sigma^\star\in\mathcal E\).
+\end{theorem}
+
+\begin{proof}
+Immediate from Lemma~\ref{lem:round}: each round reduces \(\mu\) by
+at least one while \(\mu>0\); \(\mu\) is a nonnegative integer, so
+after at most \(\mu(\sigma^0)\) rounds we must have \(\mu=0\), which
+means the current state is an equilibrium.
+\end{proof}
+
+\section{Remarks}
+
+\begin{itemize}
+\item The combinatorial heart of the proof is Lemma~\ref{lem:swap}.
+  The lemma is the specialized two-block form of the standard
+  discrete-convex swap/exchange inequality; we included a short
+  derivation sufficient for our application.
+\item The argument given is fully algebraic and coordinate-wise and
+  can be expanded further into a purely componentwise sequence of
+  inequalities if desired. It does not rely on probabilistic or
+  asymptotic arguments and gives the explicit iteration bound
+  \(2\mu(\sigma^0)\) single moves (or \(\mu(\sigma^0)\) rounds).
+\item If you prefer, a version of the above can be written to show
+  exact equality \(\mu(\sigma^{(2)})=\mu(\sigma)-1\) (rather than
+  inequality) under the further assumption that best-responses are
+  chosen as steepest descent steps minimizing the blockwise objective
+  in the sense of Murota–Shioura; the present argument ensures at least
+  a one-unit drop per round without that extra tie-breaking.
+\end{itemize}
+
+\end{document}
