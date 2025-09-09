@@ -1,0 +1,157 @@
+# Visualising LIPs
+
+
+In this file, I sketch out an approach to visualising the Locus of Indifference Prices (LIP) of an arbitrary
+valuation $v: A \to \mathbb{Z}$ on $n=3$ goods. $A$ is a subset of the powerset of $\Omega$, i.e., $A \subseteq 2^\Omega$ where $\Omega = \{1,2,3\}$. A "bundle" is a subset of the goods $\Omega$, and is denoted $\Phi$ or $\Psi$. We'll denote by $p$ the 3-dimensional price vectors. The vector $\chi = (\chi_1, \chi_2, \chi_3)$ indicates the agent's role in each trade: $\chi_\omega = 1$ if the agent is a buyer of trade $\omega$, and $\chi_\omega = -1$ if the agent is a seller.
+
+The general principle for computing the LIP is simple. The method below is NOT efficient, but we shouldn't expect polynomial-time methods for computing a polyhedral complex anyway. We use rational arithmetic throughout to ensure exact computation.
+
+For any two bundles $\Phi$ and $\Psi$, the set of prices $p$ at which the valuation's agent (weakly) prefers $\Phi$ to $\Psi$ is the halfspace
+
+$$
+    H(\Phi, \Psi) := \left \{ p \mid v(\Phi) - \sum_{\omega \in \Phi} \chi_\omega p_\omega >= v(\Psi) - \sum_{\omega \in \Psi} \chi_\omega p_\omega \right \}.
+$$
+
+To see that $H(\Phi, \Psi)$ is a half-space, we can write it as
+
+$$
+    H(\Phi, \Psi) := \left \{ p \mid  \sum_{\omega \in \Psi} \chi_\omega p_\omega - \sum_{\omega \in \Phi} \chi_\omega p_\omega >= v(\Psi) - v(\Phi) \right \}.
+$$
+
+Note that orientation matters, i.e., $H(\Phi, \Psi) \neq H(\Psi, \Phi)$. Indeed, $H(\Phi, \Psi)$ and $H(\Psi, \Phi)$ are complementary half-spaces.
+
+Now, recall that price space is divided by a polyhedral complex, which is a collection of polyhedra. Each polyhedron corresponds to the set of all prices at which a given bundle is demanded. To ensure all polyhedra are bounded and closed, we intersect with a bounding box $B = [0, M]^n$ where $M$ is a sufficiently large value.
+
+Fix bundle $\Phi$. Its polyhedron $P_\Phi$ is given by the intersection of the bounding box with all half spaces $H(\Phi, \Psi)$ with $\Psi \in A$: 
+$$
+    P_\Phi \coloneqq B \cap \bigcap_{\Psi \in A \setminus \{\Phi\}} H(\Phi, \Psi).
+$$
+
+The polyhedral complex $\mathcal{P}$ thus consists of all $P_\Phi$:
+$$
+    \mathcal{P} \coloneqq \{ P_\Phi \mid \Phi \in A \}.
+$$
+
+In order to draw the polyhedral simplex, it makes most sense to compute the facets directly. Each facet of the polyhedral complex separates two demand regions in which different bundles are demanded. For any two bundles $\Phi$ and $\Psi$, the set $P_\Phi \cap P_\Psi$ is a facet if it is non-empty. We can write
+
+$$
+    F_{\Phi, \Psi} \coloneqq P_\Phi \cap P_\Psi.
+$$
+
+Thus the set $\mathcal{F}$ of facets of $\mathcal{P}$ is given by
+
+$$
+    \mathcal{F} \coloneqq \{ P_\Phi \cap P_\Psi \mid \Phi, \Psi \in A \text{ and } P_\Phi \cap P_\Psi \neq \emptyset \}.
+$$
+
+$P_\Phi$ and thus the $F_{\Phi, \Psi}$ are bounded linear polyhedra that arise from the intersection of half spaces with the bounding box. The bounding box ensures that all polyhedra are closed and have finite vertices, making them suitable for visualization. We can use the Julia package `Polyhedra.jl` to compute them.
+
+When we draw the facets (using, e.g., Three.js), we also want to label the UDRs with the demanded bundle. For this, we can compute the Chebyshev centre of each $P_\Phi$ (which is implemented in `Polyhedra.jl`), and add a label at that point.
+
+Finally, we define an output format. We want to create a LIP.json file that looks as follows:
+
+```json
+{
+    "vertices": [[1,4,2], [10,2,5], [2,4,5]],
+    "facets": [[1,2,3], [1,5,8]],
+    "labels": [[1,1,1], [2,5,3]],
+    "bundles": ["(1,0,0)", "(0,1,0)"]
+}
+```
+
+Note that the vertices are just all the vertices of all the polyhedra / facets, as a single list. We're creating facets by referring to the indices of the vertices, not the 'raw' vertex coordinates. For this, it's important that the vertices are computed accurately, and are not subject to floating point accuracy issues. If Polyhedra.jl uses rational values, we're fine. Otherwise, we can also assume wlog that all the vertices are integer as long as the valuations are integer and substitutes.
+
+We can then write a separate Javascript web app that takes such a JSON file and plots the LIP, using Three.js. That's a separate project.
+
+Instructions: write a function create_LIP_json(v::Function, A, χ, M) that returns the LIP.json file given a valuation function v, its domain A, the coefficient vector χ, and the bounding box parameter M.
+
+## Three.js Visualization Plan
+
+Once the LIP.json file is generated, we can create an interactive 3D visualization using Three.js. Here's the implementation plan:
+
+### 1. Scene Setup
+- Create a Three.js scene with perspective camera positioned to view the entire bounding box
+- Add orbit controls for user interaction (rotation, zoom, pan)
+- Set up appropriate lighting (ambient + directional) to illuminate the polyhedral surfaces
+- Configure a coordinate system with the bounding box [0,M]³ as the viewing region
+
+### 2. Geometry Construction
+- **Vertices**: Load the vertex coordinates from `"vertices"` array as Three.js `Vector3` objects
+- **Facets**: For each facet in the `"facets"` array:
+  - Create geometry by connecting the vertices specified by the facet indices
+  - Use `BufferGeometry` with position attributes for efficiency
+  - For facets with 3+ vertices, triangulate if necessary using earcut or similar algorithm
+
+### 3. Material and Rendering Strategy
+- **Polyhedral faces**: Render each facet as a semi-transparent mesh
+  - Use different colors for different bundle regions (based on adjacent polyhedra)
+  - Apply transparency (α ≈ 0.7) to see overlapping structures
+  - Consider wireframe overlay for edge definition
+- **Edges**: Optionally render 1D facets as distinct lines with different styling
+- **Vertices**: Render 0D facets as small spheres at intersection points
+
+### 4. Bundle Labels
+- **Label positioning**: Use the `"labels"` coordinates as positions for text labels
+- **Text rendering**: Create HTML/CSS labels or Three.js text sprites showing bundle names from `"bundles"`
+- **Label management**: Implement distance-based visibility and size scaling for readability
+- **Interactive labels**: Show/hide labels on hover, with bundle information popup
+
+### 5. Interactive Features
+- **Region highlighting**: On mouse hover, highlight the corresponding polyhedral region
+- **Bundle information**: Click to display detailed bundle information (valuation, optimal prices)
+- **View presets**: Buttons for standard views (front, side, isometric)
+- **Transparency control**: Slider to adjust facet opacity for better visualization of interior structure
+- **Bundle filtering**: Toggle visibility of specific bundle regions
+
+### 6. Performance Optimizations
+- Use instanced geometry for similar facet types
+- Implement frustum culling for facets outside camera view  
+- Level-of-detail (LOD) system for complex polyhedral structures
+- Efficient raycasting for mouse interaction using bounding boxes
+
+### 7. Mathematical Accuracy
+- Preserve the rational arithmetic precision from Julia by using sufficient decimal places
+- Handle potential numerical issues in facet triangulation
+- Ensure vertex sharing between adjacent facets for proper mesh connectivity
+
+### 8. Implementation Status & File Structure
+
+**✅ IMPLEMENTED**: The complete Three.js visualization system has been implemented with the following file structure:
+
+```
+visualiseLIP/
+├── createLIP.jl               # Julia implementation with generate_test_LIP_file()
+├── index.html                 # Main webpage with clean interface
+├── js/
+│   ├── main.js                # Three.js scene setup and main loop
+│   ├── geometry.js            # LIP geometry construction from JSON
+│   ├── materials.js           # Materials and color management
+│   ├── labels.js              # Three.js sprite-based bundle labels
+│   └── controls.js            # Interactive UI controls panel
+├── style.css                  # UI styling and layout
+└── data/
+    └── LIP.json               # Generated from createLIP.jl
+```
+
+**Key Features Implemented:**
+- ✅ **Sprite-based labels**: Smooth camera-following labels using Three.js sprites with canvas-generated text
+- ✅ **File upload interface**: Drag-and-drop and click-to-upload functionality for custom LIP.json files  
+- ✅ **Sample data loading**: Loads actual LIP data generated from createLIP.jl (27 vertices, 28 facets, 8 bundles)
+- ✅ **Interactive controls**: Transparency slider, wireframe toggle, view presets, auto-rotation
+- ✅ **Clean UI**: Simple header with upload/sample buttons and canvas below
+- ✅ **Import maps**: Reliable Three.js module loading using unpkg CDN
+- ✅ **Proper data generation**: `generate_test_LIP_file()` function creates valid JSON from LIP computation
+
+**Usage:**
+```julia
+include("createLIP.jl")
+generate_test_LIP_file("data/LIP.json")  # Generate sample data
+```
+
+Then serve the visualization:
+```bash
+python3 -m http.server 8000
+# Navigate to http://localhost:8000
+```
+
+The visualization provides an interactive 3D view of the Locus of Indifference Prices, allowing users to explore polyhedral complexes representing preference regions for different bundles in a 3-good economy with cardinality-based valuations.

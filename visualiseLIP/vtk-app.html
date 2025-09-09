@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIP Visualization - VTK.js</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-right: 20px;
+        }
+        
+        .header .tech-badge {
+            background: #8e44ad;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .upload-btn, .sample-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .upload-btn {
+            background: #007bff;
+            color: white;
+        }
+        
+        .upload-btn:hover {
+            background: #0056b3;
+        }
+        
+        .sample-btn {
+            background: #28a745;
+            color: white;
+        }
+        
+        .sample-btn:hover {
+            background: #218838;
+        }
+        
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            background: #fafafa;
+            overflow: hidden;
+        }
+        
+        #file-input {
+            display: none;
+        }
+        
+        .status {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 100;
+            display: none;
+            max-width: 400px;
+        }
+        
+        .status.success { border-left: 4px solid #28a745; }
+        .status.error { border-left: 4px solid #dc3545; }
+        .status.info { border-left: 4px solid #007bff; }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 200;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #8e44ad;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .welcome {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #666;
+            z-index: 50;
+        }
+        
+        .welcome h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .welcome p {
+            font-size: 16px;
+            opacity: 0.8;
+        }
+        
+        /* VTK.js canvas styling */
+        .vtk-container {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .vtk-container canvas {
+            display: block;
+        }
+        
+        /* Controls panel */
+        .controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            min-width: 200px;
+            z-index: 100;
+            display: none;
+        }
+        
+        .controls h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .control-group {
+            margin-bottom: 12px;
+        }
+        
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        .control-group label {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .control-group input[type="range"] {
+            width: 100%;
+        }
+        
+        .control-group button {
+            padding: 6px 12px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .control-group button:hover {
+            background: #e9ecef;
+        }
+        
+        .control-group button.active {
+            background: #8e44ad;
+            color: white;
+            border-color: #8e44ad;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>LIP Visualization</h1>
+        <span class="tech-badge">VTK.js</span>
+        <button class="upload-btn" onclick="document.getElementById('file-input').click()">
+            📁 Upload LIP File
+        </button>
+        <button class="sample-btn" onclick="loadSampleData()">
+            🎲 Load Sample Data
+        </button>
+        <input type="file" id="file-input" accept=".json">
+    </header>
+    
+    <div class="canvas-container" id="canvas-container">
+        <div class="welcome" id="welcome">
+            <h2>Locus of Indifference Prices</h2>
+            <p>Upload a LIP.json file or load sample data to begin<br>
+            <small>Powered by VTK.js for robust scientific visualization</small></p>
+        </div>
+        
+        <div class="loading" id="loading" style="display: none;">
+            <div class="spinner"></div>
+            <div>Loading visualization...</div>
+        </div>
+        
+        <div class="status" id="status"></div>
+        
+        <div class="controls" id="controls">
+            <h3>Controls</h3>
+            <div class="control-group">
+                <label>Rendering Mode</label>
+                <button onclick="setRenderMode('surface')" class="active">Surface</button>
+                <button onclick="setRenderMode('wireframe')">Wireframe</button>
+                <button onclick="setRenderMode('points')">Points</button>
+            </div>
+            <div class="control-group">
+                <label>Opacity</label>
+                <input type="range" id="opacity" min="0.1" max="1" step="0.1" value="0.8">
+            </div>
+            <div class="control-group">
+                <button onclick="resetCamera()">Reset View</button>
+                <button onclick="toggleAxes()">Toggle Axes</button>
+            </div>
+        </div>
+        
+        <!-- VTK.js canvas will be inserted here -->
+        <div class="vtk-container" id="vtk-container"></div>
+    </div>
+
+    <!-- Load VTK.js from CDN -->
+    <script src="https://unpkg.com/vtk.js"></script>
+    
+    <script>
+        console.log('VTK.js LIP Visualization starting...');
+        
+        // Global variables
+        let vtkRenderer, vtkRenderWindow, vtkRenderWindowInteractor;
+        let currentActor = null;
+        let currentData = null;
+        
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 4000);
+        }
+        
+        function showLoading(show = true) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('welcome').style.display = show || currentData ? 'none' : 'block';
+        }
+        
+        function hideWelcome() {
+            document.getElementById('welcome').style.display = 'none';
+            document.getElementById('controls').style.display = 'block';
+        }
+
+        // Initialize VTK.js
+        function initVTK() {
+            const container = document.getElementById('vtk-container');
+            
+            try {
+                // Create VTK render window with OpenGL backend
+                const renderWindow = vtk.Rendering.Core.vtkRenderWindow.newInstance();
+                vtkRenderWindow = renderWindow;
+                
+                // Create renderer
+                const renderer = vtk.Rendering.Core.vtkRenderer.newInstance();
+                vtkRenderer = renderer;
+                renderer.setBackground(0.95, 0.95, 0.95); // Light gray background
+                renderWindow.addRenderer(renderer);
+                
+                // Create OpenGL render window
+                const openglRenderWindow = vtk.Rendering.OpenGL.vtkRenderWindow.newInstance();
+                openglRenderWindow.setContainer(container);
+                openglRenderWindow.setSize(container.offsetWidth, container.offsetHeight);
+                renderWindow.addView(openglRenderWindow);
+                
+                // Create render window interactor  
+                const interactor = vtk.Rendering.Core.vtkRenderWindowInteractor.newInstance();
+                vtkRenderWindowInteractor = interactor;
+                interactor.setView(openglRenderWindow);
+                interactor.initialize();
+                interactor.bindEvents(container);
+                
+                // Set interactor style for 3D navigation
+                const style = vtk.Interaction.Style.vtkInteractorStyleTrackballCamera.newInstance();
+                interactor.setInteractorStyle(style);
+                
+                // Handle window resize
+                window.addEventListener('resize', () => {
+                    const dims = container.getBoundingClientRect();
+                    openglRenderWindow.setSize(dims.width, dims.height);
+                    renderWindow.render();
+                });
+                
+                console.log('VTK.js initialized successfully');
+                showStatus('VTK.js renderer initialized', 'success');
+                
+            } catch (error) {
+                console.error('VTK.js initialization error:', error);
+                showStatus('Failed to initialize VTK.js: ' + error.message, 'error');
+            }
+        }
+        
+        // File upload handler
+        document.getElementById('file-input').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                console.log('File selected:', file.name);
+                handleFile(file);
+            }
+        });
+        
+        function handleFile(file) {
+            if (!file.name.toLowerCase().endsWith('.json')) {
+                showStatus('Please select a JSON file', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            showStatus('Processing file...', 'info');
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    console.log('JSON parsed, keys:', Object.keys(data));
+                    
+                    // Validate basic structure
+                    if (!data.vertices || !data.facets) {
+                        throw new Error('Invalid LIP file: missing vertices or facets');
+                    }
+                    
+                    showStatus(`Loaded: ${data.vertices.length} vertices, ${data.facets.length} facets`, 'success');
+                    visualizeLIPData(data);
+                } catch (error) {
+                    console.error('File processing error:', error);
+                    showStatus('Invalid JSON file: ' + error.message, 'error');
+                    showLoading(false);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function loadSampleData() {
+            console.log('Loading sample data...');
+            showLoading(true);
+            showStatus('Loading sample data...', 'info');
+            
+            fetch('./data/LIP.json')
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Sample data loaded:', Object.keys(data));
+                    console.log(`Vertices: ${data.vertices.length}, Facets: ${data.facets.length}`);
+                    
+                    showStatus('Sample data loaded successfully', 'success');
+                    visualizeLIPData(data);
+                })
+                .catch(error => {
+                    console.error('Sample data error:', error);
+                    showStatus('Failed to load sample data', 'error');
+                    showLoading(false);
+                });
+        }
+        
+        function visualizeLIPData(data) {
+            console.log('=== VTK.js Visualization ===');
+            console.log('Processing LIP data for VTK.js rendering...');
+            
+            currentData = data;
+            
+            try {
+                // Clear existing actors
+                if (currentActor) {
+                    vtkRenderer.removeActor(currentActor);
+                }
+                
+                // Create VTK polydata from LIP data
+                const polyData = createVTKPolyData(data);
+                
+                // Create mapper
+                const mapper = vtk.Rendering.Core.vtkMapper.newInstance();
+                mapper.setInputData(polyData);
+                
+                // Create actor
+                const actor = vtk.Rendering.Core.vtkActor.newInstance();
+                actor.setMapper(mapper);
+                
+                // Set initial properties
+                const property = actor.getProperty();
+                property.setColor(0.2, 0.6, 1.0); // Nice blue color
+                property.setOpacity(0.8);
+                property.setEdgeVisibility(true); // Show edges
+                property.setEdgeColor(0.1, 0.1, 0.1); // Dark edges
+                
+                // Add to scene
+                vtkRenderer.addActor(actor);
+                currentActor = actor;
+                
+                // Reset camera and render
+                vtkRenderer.resetCamera();
+                vtkRenderWindow.render();
+                
+                showStatus(`Rendered ${data.facets.length} facets successfully`, 'success');
+                hideWelcome();
+                
+            } catch (error) {
+                console.error('VTK.js visualization error:', error);
+                showStatus('Failed to create visualization: ' + error.message, 'error');
+            }
+            
+            showLoading(false);
+        }
+        
+        function createVTKPolyData(data) {
+            console.log('Creating VTK PolyData with ConvexHull approach...');
+            
+            // Debug: Check what's available in VTK.js
+            console.log('Available VTK Filters.Core:', Object.keys(vtk.Filters.Core || {}));
+            console.log('Available VTK Filters.General:', Object.keys(vtk.Filters.General || {}));
+            console.log('Available VTK Filters.Sources:', Object.keys(vtk.Filters.Sources || {}));
+            
+            // Use convex hull approach since polygons are always convex
+            return createPolyDataWithConvexHull(data);
+        }
+        
+        function createPolyDataWithDelaunay(data) {
+            console.log('Trying to find correct Delaunay filter...');
+            
+            const firstFacet = data.facets.find(f => f.length === 4);
+            if (!firstFacet) throw new Error('No 4-vertex facet found');
+            
+            const facetVertices = firstFacet.map(i => data.vertices[i]);
+            console.log('Facet vertices:', facetVertices);
+            
+            // Create points
+            const points = vtk.Common.Core.vtkPoints.newInstance();
+            const pointsData = new Float32Array(facetVertices.length * 3);
+            
+            for (let i = 0; i < facetVertices.length; i++) {
+                pointsData[i * 3] = facetVertices[i][0];
+                pointsData[i * 3 + 1] = facetVertices[i][1];
+                pointsData[i * 3 + 2] = facetVertices[i][2];
+            }
+            points.setData(pointsData, 3);
+            
+            // Create initial polydata with points
+            const inputPolyData = vtk.Common.DataModel.vtkPolyData.newInstance();
+            inputPolyData.setPoints(points);
+            
+            // Try different possible Delaunay filter locations
+            let delaunay = null;
+            
+            // Option 1: Try vtkDelaunay2D in Core
+            if (vtk.Filters && vtk.Filters.Core && vtk.Filters.Core.vtkDelaunay2D) {
+                console.log('Found vtkDelaunay2D in Core');
+                delaunay = vtk.Filters.Core.vtkDelaunay2D.newInstance();
+            }
+            // Option 2: Try in General
+            else if (vtk.Filters && vtk.Filters.General && vtk.Filters.General.vtkDelaunay2D) {
+                console.log('Found vtkDelaunay2D in General');
+                delaunay = vtk.Filters.General.vtkDelaunay2D.newInstance();
+            }
+            // Option 3: Try vtkTriangleFilter
+            else if (vtk.Filters && vtk.Filters.Core && vtk.Filters.Core.vtkTriangleFilter) {
+                console.log('Found vtkTriangleFilter in Core');
+                delaunay = vtk.Filters.Core.vtkTriangleFilter.newInstance();
+            }
+            // Option 4: Try different naming convention
+            else if (vtk.Filters && vtk.Filters.Core && vtk.Filters.Core.vtkDelaunay) {
+                console.log('Found vtkDelaunay in Core');
+                delaunay = vtk.Filters.Core.vtkDelaunay.newInstance();
+            }
+            
+            if (delaunay) {
+                console.log('Using triangulation filter');
+                delaunay.setInputData(inputPolyData);
+                delaunay.update();
+                return delaunay.getOutputData();
+            } else {
+                throw new Error('No triangulation filter found in VTK.js');
+            }
+        }
+        
+        function createPolyDataWithConvexHull(data) {
+            console.log('Processing each convex facet separately...');
+            
+            // Create separate polydata for each facet, then combine them
+            const allPolyDataList = [];
+            
+            data.facets.forEach((facet, index) => {
+                if (facet.length >= 3) {
+                    console.log(`Processing convex facet ${index} with ${facet.length} vertices`);
+                    
+                    // Get vertices for this specific facet
+                    const facetVertices = facet.map(i => data.vertices[i]);
+                    
+                    // Create polydata for this individual convex facet
+                    const facetPolyData = createFanTriangulationForFacet(facetVertices);
+                    allPolyDataList.push(facetPolyData);
+                }
+            });
+            
+            console.log(`Created ${allPolyDataList.length} individual facet polydata objects`);
+            
+            // Combine all facet polydata into one
+            return combinePolyDataList(allPolyDataList);
+        }
+        
+        function createFanTriangulationForFacet(vertices) {
+            // Create points for this facet only
+            const points = vtk.Common.Core.vtkPoints.newInstance();
+            const pointsData = new Float32Array(vertices.length * 3);
+            
+            for (let i = 0; i < vertices.length; i++) {
+                pointsData[i * 3] = vertices[i][0];
+                pointsData[i * 3 + 1] = vertices[i][1];
+                pointsData[i * 3 + 2] = vertices[i][2];
+            }
+            points.setData(pointsData, 3);
+            
+            // Fan triangulate this individual convex facet
+            const polys = vtk.Common.Core.vtkCellArray.newInstance();
+            
+            if (vertices.length === 3) {
+                // Triangle - add directly
+                polys.insertNextCell([3, 0, 1, 2]);
+            } else {
+                // Fan triangulation from vertex 0
+                for (let i = 1; i < vertices.length - 1; i++) {
+                    polys.insertNextCell([3, 0, i, i + 1]);
+                }
+            }
+            
+            // Create polydata for this facet
+            const polyData = vtk.Common.DataModel.vtkPolyData.newInstance();
+            polyData.setPoints(points);
+            polyData.setPolys(polys);
+            
+            return polyData;
+        }
+        
+        function combinePolyDataList(polyDataList) {
+            if (polyDataList.length === 0) {
+                throw new Error('No polydata to combine');
+            }
+            
+            if (polyDataList.length === 1) {
+                return polyDataList[0];
+            }
+            
+            // Use VTK.js append filter if available, or manual combination
+            if (vtk.Filters && vtk.Filters.General && vtk.Filters.General.vtkAppendPolyData) {
+                console.log('Using vtkAppendPolyData filter');
+                const appendFilter = vtk.Filters.General.vtkAppendPolyData.newInstance();
+                
+                polyDataList.forEach(pd => appendFilter.addInputData(pd));
+                appendFilter.update();
+                return appendFilter.getOutputData();
+            } else {
+                console.log('Manual polydata combination');
+                return manualCombinePolyData(polyDataList);
+            }
+        }
+        
+        function manualCombinePolyData(polyDataList) {
+            // Manual combination of multiple polydata objects
+            let totalPoints = 0;
+            let totalCells = 0;
+            
+            // Count total points and cells
+            polyDataList.forEach(pd => {
+                totalPoints += pd.getNumberOfPoints();
+                totalCells += pd.getNumberOfCells();
+            });
+            
+            console.log(`Combining ${polyDataList.length} polydata: ${totalPoints} points, ${totalCells} cells`);
+            
+            // Create combined points array
+            const combinedPointsData = new Float32Array(totalPoints * 3);
+            const combinedPolys = vtk.Common.Core.vtkCellArray.newInstance();
+            
+            let pointOffset = 0;
+            let dataOffset = 0;
+            
+            polyDataList.forEach(pd => {
+                const points = pd.getPoints();
+                const polys = pd.getPolys();
+                const numPoints = pd.getNumberOfPoints();
+                
+                // Copy points
+                const pointsData = points.getData();
+                combinedPointsData.set(pointsData, dataOffset);
+                dataOffset += pointsData.length;
+                
+                // Copy cells with offset indices
+                const cellData = polys.getData();
+                for (let i = 0; i < cellData.length;) {
+                    const cellSize = cellData[i];
+                    const newCell = [cellSize];
+                    
+                    for (let j = 1; j <= cellSize; j++) {
+                        newCell.push(cellData[i + j] + pointOffset);
+                    }
+                    
+                    combinedPolys.insertNextCell(newCell);
+                    i += cellSize + 1;
+                }
+                
+                pointOffset += numPoints;
+            });
+            
+            // Create final combined polydata
+            const combinedPoints = vtk.Common.Core.vtkPoints.newInstance();
+            combinedPoints.setData(combinedPointsData, 3);
+            
+            const combinedPolyData = vtk.Common.DataModel.vtkPolyData.newInstance();
+            combinedPolyData.setPoints(combinedPoints);
+            combinedPolyData.setPolys(combinedPolys);
+            
+            return combinedPolyData;
+        }
+        
+        function createSimpleFanTriangulation(vertices) {
+            console.log('Creating simple fan triangulation for convex polygon...');
+            
+            // For a convex polygon, fan triangulation from any vertex works
+            // Use vertex 0 as the fan center
+            const points = vtk.Common.Core.vtkPoints.newInstance();
+            const pointsData = new Float32Array(vertices.length * 3);
+            
+            for (let i = 0; i < vertices.length; i++) {
+                pointsData[i * 3] = vertices[i][0];
+                pointsData[i * 3 + 1] = vertices[i][1];
+                pointsData[i * 3 + 2] = vertices[i][2];
+            }
+            points.setData(pointsData, 3);
+            
+            // Create triangles using fan triangulation
+            const polys = vtk.Common.Core.vtkCellArray.newInstance();
+            
+            for (let i = 1; i < vertices.length - 1; i++) {
+                // Triangle: center(0), current(i), next(i+1)
+                polys.insertNextCell([3, 0, i, i + 1]);
+                console.log(`Triangle: (0, ${i}, ${i + 1})`);
+            }
+            
+            const polyData = vtk.Common.DataModel.vtkPolyData.newInstance();
+            polyData.setPoints(points);
+            polyData.setPolys(polys);
+            
+            console.log(`Created ${vertices.length - 2} triangles using fan triangulation`);
+            return polyData;
+        }
+        
+        function createPolyDataWithManualTriangulation(data) {
+            console.log('Trying manual triangulation with vertex reordering...');
+            
+            const firstFacet = data.facets.find(f => f.length === 4);
+            if (!firstFacet) throw new Error('No 4-vertex facet found');
+            
+            const facetVertices = firstFacet.map(i => data.vertices[i]);
+            console.log('Original vertex order:', facetVertices);
+            
+            // Reorder vertices to form proper rectangle
+            const orderedVertices = reorderRectangleVertices(facetVertices);
+            console.log('Reordered vertices:', orderedVertices);
+            
+            // Create points
+            const points = vtk.Common.Core.vtkPoints.newInstance();
+            const pointsData = new Float32Array(orderedVertices.length * 3);
+            
+            for (let i = 0; i < orderedVertices.length; i++) {
+                pointsData[i * 3] = orderedVertices[i][0];
+                pointsData[i * 3 + 1] = orderedVertices[i][1];
+                pointsData[i * 3 + 2] = orderedVertices[i][2];
+            }
+            points.setData(pointsData, 3);
+            
+            // Create properly ordered quad cell
+            const polys = vtk.Common.Core.vtkCellArray.newInstance();
+            const cellData = [4, 0, 1, 2, 3]; // Ordered indices
+            polys.insertNextCell(cellData);
+            
+            // Create polydata
+            const polyData = vtk.Common.DataModel.vtkPolyData.newInstance();
+            polyData.setPoints(points);
+            polyData.setPolys(polys);
+            
+            return polyData;
+        }
+        
+        function reorderRectangleVertices(vertices) {
+            // Find which coordinate is constant (plane normal)
+            const coords = vertices.map(v => [v[0], v[1], v[2]]);
+            const x_values = coords.map(c => c[0]);
+            const y_values = coords.map(c => c[1]);
+            const z_values = coords.map(c => c[2]);
+            
+            const x_const = Math.abs(Math.max(...x_values) - Math.min(...x_values)) < 0.001;
+            const y_const = Math.abs(Math.max(...y_values) - Math.min(...y_values)) < 0.001;
+            const z_const = Math.abs(Math.max(...z_values) - Math.min(...z_values)) < 0.001;
+            
+            console.log('Plane analysis:', { x_const, y_const, z_const });
+            
+            if (x_const) {
+                // Sort by y, then z to get proper rectangle order
+                return vertices.sort((a, b) => {
+                    if (Math.abs(a[1] - b[1]) < 0.001) {
+                        return a[2] - b[2];
+                    }
+                    return a[1] - b[1];
+                });
+            } else if (y_const) {
+                // Sort by x, then z
+                return vertices.sort((a, b) => {
+                    if (Math.abs(a[0] - b[0]) < 0.001) {
+                        return a[2] - b[2];
+                    }
+                    return a[0] - b[0];
+                });
+            } else if (z_const) {
+                // Sort by x, then y
+                return vertices.sort((a, b) => {
+                    if (Math.abs(a[0] - b[0]) < 0.001) {
+                        return a[1] - b[1];
+                    }
+                    return a[0] - b[0];
+                });
+            }
+            
+            // Not axis-aligned, return original
+            return vertices;
+        }
+        
+        // Control functions
+        function setRenderMode(mode) {
+            console.log('Setting render mode:', mode);
+            
+            if (currentActor) {
+                const property = currentActor.getProperty();
+                
+                switch(mode) {
+                    case 'surface':
+                        property.setRepresentation(2); // VTK_SURFACE
+                        property.setEdgeVisibility(true);
+                        break;
+                    case 'wireframe':
+                        property.setRepresentation(1); // VTK_WIREFRAME  
+                        property.setEdgeVisibility(false);
+                        break;
+                    case 'points':
+                        property.setRepresentation(0); // VTK_POINTS
+                        property.setPointSize(4);
+                        break;
+                }
+                
+                vtkRenderWindow.render();
+            }
+            
+            // Update button states
+            document.querySelectorAll('.control-group button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+        
+        function resetCamera() {
+            if (vtkRenderer) {
+                vtkRenderer.resetCamera();
+                vtkRenderWindow.render();
+                showStatus('Camera reset', 'info');
+            }
+        }
+        
+        let axesActor = null;
+        function toggleAxes() {
+            if (!vtkRenderer) return;
+            
+            if (axesActor) {
+                // Remove existing axes
+                vtkRenderer.removeActor(axesActor);
+                axesActor = null;
+                showStatus('Axes hidden', 'info');
+            } else {
+                // Create and add axes
+                const axes = vtk.Filters.Sources.vtkAxes.newInstance();
+                axes.setOrigin(0, 0, 0);
+                axes.setScaleFactor(2);
+                
+                const mapper = vtk.Rendering.Core.vtkMapper.newInstance();
+                mapper.setInputConnection(axes.getOutputPort());
+                
+                axesActor = vtk.Rendering.Core.vtkActor.newInstance();
+                axesActor.setMapper(mapper);
+                
+                vtkRenderer.addActor(axesActor);
+                showStatus('Axes shown', 'info');
+            }
+            
+            vtkRenderWindow.render();
+        }
+        
+        // Opacity control
+        document.getElementById('opacity').addEventListener('input', (e) => {
+            const opacity = parseFloat(e.target.value);
+            console.log('Setting opacity:', opacity);
+            
+            if (currentActor) {
+                const property = currentActor.getProperty();
+                property.setOpacity(opacity);
+                vtkRenderWindow.render();
+            }
+        });
+        
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            initVTK();
+        });
+        
+        console.log('VTK.js app interface ready');
+    </script>
+</body>
+</html>

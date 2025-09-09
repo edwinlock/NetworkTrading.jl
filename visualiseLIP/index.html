@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIP Visualization</title>
+    
+    <!-- Import map for cleaner module imports -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.154.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.154.0/examples/jsm/"
+        }
+    }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-right: 20px;
+        }
+        
+        .upload-btn, .sample-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .upload-btn {
+            background: #007bff;
+            color: white;
+        }
+        
+        .upload-btn:hover {
+            background: #0056b3;
+        }
+        
+        .sample-btn {
+            background: #28a745;
+            color: white;
+        }
+        
+        .sample-btn:hover {
+            background: #218838;
+        }
+        
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            background: #fafafa;
+        }
+        
+        #file-input {
+            display: none;
+        }
+        
+        .status {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 100;
+            display: none;
+        }
+        
+        .status.success { border-left: 4px solid #28a745; }
+        .status.error { border-left: 4px solid #dc3545; }
+        .status.info { border-left: 4px solid #007bff; }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 200;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .welcome {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #666;
+            z-index: 50;
+        }
+        
+        .welcome h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .welcome p {
+            font-size: 16px;
+            opacity: 0.8;
+        }
+        
+        /* Controls overlay */
+        .controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            min-width: 200px;
+            z-index: 100;
+            display: none;
+        }
+        
+        .controls h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .control-group {
+            margin-bottom: 12px;
+        }
+        
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        .control-group label {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .control-group input[type="range"] {
+            width: 100%;
+        }
+        
+        .control-group button {
+            padding: 6px 12px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        
+        .control-group button:hover {
+            background: #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>LIP Visualization</h1>
+        <button class="upload-btn" onclick="document.getElementById('file-input').click()">
+            📁 Upload LIP File
+        </button>
+        <button class="sample-btn" onclick="loadSampleData()">
+            🎲 Load Sample Data
+        </button>
+        <input type="file" id="file-input" accept=".json">
+    </header>
+    
+    <div class="canvas-container" id="canvas-container">
+        <div class="welcome" id="welcome">
+            <h2>Locus of Indifference Prices</h2>
+            <p>Upload a LIP.json file or load sample data to begin</p>
+        </div>
+        
+        <div class="loading" id="loading" style="display: none;">
+            <div class="spinner"></div>
+            <div>Loading visualization...</div>
+        </div>
+        
+        <div class="status" id="status"></div>
+        
+        <div class="controls" id="controls">
+            <h3>Controls</h3>
+            <div class="control-group">
+                <label>Transparency</label>
+                <input type="range" id="transparency" min="0.1" max="1" step="0.1" value="0.7">
+            </div>
+            <div class="control-group">
+                <button onclick="toggleWireframe()">Wireframe</button>
+                <button onclick="resetView()">Reset View</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+    
+    <script>
+        console.log('Simple LIP interface starting...');
+        
+        let currentVisualization = null;
+        
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
+        }
+        
+        function showLoading(show = true) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('welcome').style.display = show ? 'none' : 'block';
+        }
+        
+        function hideWelcome() {
+            document.getElementById('welcome').style.display = 'none';
+            document.getElementById('controls').style.display = 'block';
+        }
+        
+        // File upload handler
+        document.getElementById('file-input').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                console.log('File selected:', file.name);
+                handleFile(file);
+            }
+        });
+        
+        function handleFile(file) {
+            if (!file.name.toLowerCase().endsWith('.json')) {
+                showStatus('Please select a JSON file', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            showStatus('Processing file...', 'info');
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    console.log('JSON parsed, keys:', Object.keys(data));
+                    
+                    // Validate basic structure
+                    if (!data.vertices || !data.facets) {
+                        throw new Error('Invalid LIP file: missing vertices or facets');
+                    }
+                    
+                    showStatus(`Loaded: ${data.vertices.length} vertices, ${data.facets.length} facets`, 'success');
+                    initVisualization(data);
+                } catch (error) {
+                    console.error('File processing error:', error);
+                    showStatus('Invalid JSON file: ' + error.message, 'error');
+                    showLoading(false);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function loadSampleData() {
+            console.log('Loading sample data...');
+            showLoading(true);
+            showStatus('Loading sample data...', 'info');
+            
+            fetch('./data/LIP.json')
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('=== DEBUGGING: Sample data loaded ===');
+                    console.log('Data structure:', Object.keys(data));
+                    console.log(`Vertices: ${data.vertices ? data.vertices.length : 'undefined'}`);
+                    console.log(`Facets: ${data.facets ? data.facets.length : 'undefined'}`);
+                    console.log(`Labels: ${data.labels ? data.labels.length : 'undefined'}`);
+                    console.log(`Bundles: ${data.bundles ? data.bundles.length : 'undefined'}`);
+                    
+                    if (data.vertices && data.vertices.length > 0) {
+                        console.log('First 3 vertices:', data.vertices.slice(0, 3));
+                    }
+                    if (data.facets && data.facets.length > 0) {
+                        console.log('First 3 facets:', data.facets.slice(0, 3));
+                    }
+                    
+                    showStatus('Sample data loaded successfully', 'success');
+                    initVisualization(data);
+                })
+                .catch(error => {
+                    console.error('Sample data error:', error);
+                    showStatus('Failed to load sample data', 'error');
+                    showLoading(false);
+                });
+        }
+        
+        function initVisualization(data) {
+            try {
+                console.log('=== DEBUGGING: initVisualization called ===');
+                console.log('Data passed to Three.js:', {
+                    vertices: data.vertices ? data.vertices.length : 'missing',
+                    facets: data.facets ? data.facets.length : 'missing',
+                    labels: data.labels ? data.labels.length : 'missing',
+                    bundles: data.bundles ? data.bundles.length : 'missing'
+                });
+                
+                if (window.lipVisualization && window.lipVisualization.initWithData) {
+                    console.log('Calling window.lipVisualization.initWithData...');
+                    window.lipVisualization.initWithData(data);
+                    hideWelcome();
+                    showLoading(false);
+                } else {
+                    console.error('window.lipVisualization not available:', {
+                        exists: !!window.lipVisualization,
+                        hasInitWithData: window.lipVisualization && !!window.lipVisualization.initWithData
+                    });
+                    showStatus('3D visualization not available', 'error');
+                    showLoading(false);
+                }
+            } catch (error) {
+                console.error('Visualization error:', error);
+                showStatus('Failed to create visualization', 'error');
+                showLoading(false);
+            }
+        }
+        
+        // Control functions
+        function toggleWireframe() {
+            if (currentVisualization && currentVisualization.lipMaterials) {
+                const current = currentVisualization.wireframeMode || false;
+                currentVisualization.lipMaterials.toggleWireframe(!current);
+                currentVisualization.wireframeMode = !current;
+            }
+        }
+        
+        function resetView() {
+            if (currentVisualization && currentVisualization.controls) {
+                currentVisualization.controls.reset();
+            }
+        }
+        
+        // Transparency control
+        document.getElementById('transparency').addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            if (currentVisualization && currentVisualization.lipMaterials) {
+                currentVisualization.lipMaterials.updateTransparency(value);
+            }
+        });
+        
+        // Listen for visualization events
+        window.addEventListener('lipVisualizationReady', () => {
+            currentVisualization = window.lipVisualization;
+            showLoading(false);
+            hideWelcome();
+        });
+        
+        window.addEventListener('lipVisualizationError', (event) => {
+            showStatus('Visualization error: ' + event.detail.message, 'error');
+            showLoading(false);
+        });
+        
+        console.log('Interface ready');
+    </script>
+</body>
+</html>
