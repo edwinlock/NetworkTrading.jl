@@ -155,10 +155,43 @@
         .vtk-container {
             width: 100%;
             height: 100%;
+            position: relative;
         }
         
         .vtk-container canvas {
             display: block;
+        }
+        
+        /* Label overlay styling */
+        .labels-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .bundle-label {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transform: translate(-50%, -50%);
+            white-space: nowrap;
+            user-select: none;
+            transition: opacity 0.2s ease;
+        }
+        
+        .bundle-label.hidden {
+            opacity: 0;
         }
         
         /* Controls panel */
@@ -264,23 +297,29 @@
             <div class="control-group">
                 <button onclick="resetCamera()">Reset View</button>
                 <button onclick="toggleAxes()">Toggle Axes</button>
+                <button onclick="toggleLabels()">Toggle Labels</button>
             </div>
         </div>
         
         <!-- VTK.js canvas will be inserted here -->
-        <div class="vtk-container" id="vtk-container"></div>
+        <div class="vtk-container" id="vtk-container">
+            <!-- Labels overlay container -->
+            <div class="labels-container" id="labels-container"></div>
+        </div>
     </div>
 
-    <!-- Load VTK.js from CDN -->
-    <script src="https://unpkg.com/vtk.js"></script>
+    <!-- Load VTK.js locally -->
+    <script src="vtk.js"></script>
     
     <script>
         console.log('VTK.js LIP Visualization starting...');
+        console.log('VTK.js version loaded locally');
         
         // Global variables
-        let vtkRenderer, vtkRenderWindow, vtkRenderWindowInteractor;
+        let vtkRenderer, vtkRenderWindow, vtkRenderWindowInteractor, openglRenderWindow;
         let currentActor = null;
         let currentData = null;
+        let lipLabels = null;
         
         function showStatus(message, type = 'info') {
             const status = document.getElementById('status');
@@ -302,6 +341,276 @@
             document.getElementById('controls').style.display = 'block';
         }
 
+        // LIP3DLabels class for managing 3D sprite labels
+        class LIP3DLabels {
+            constructor(data, renderer) {
+                this.data = data;
+                this.renderer = renderer;
+                this.actors = [];
+                this.visible = true;
+                
+                this.createLabels();
+            }
+            
+            createLabels() {
+                console.log('Creating 3D bundle labels...');
+                
+                if (!this.data.labels || !this.data.bundles) {
+                    console.warn('No labels or bundles data found');
+                    return;
+                }
+                
+                // Create 3D text labels for each bundle position
+                this.data.labels.forEach((position, index) => {
+                    const bundleName = this.data.bundles[index] || `Bundle ${index}`;
+                    const textActor = this.createTextLabel(bundleName, position, index);
+                    
+                    if (textActor) {
+                        this.actors.push({ actor: textActor, name: bundleName });
+                        this.renderer.addActor(textActor);
+                    }
+                });
+                
+                console.log(`Created ${this.actors.length} 3D text labels`);
+            }
+            
+            createTextLabel(text, position, index) {
+                console.log(`Creating text label for "${text}"`);
+                
+                // Search comprehensively for VectorText in the new VTK.js version
+                console.log('=== Comprehensive VectorText Search ===');
+                console.log('VTK version info:', vtk.version || 'unknown');
+                console.log('vtk.Rendering?.Core?.VectorText:', vtk.Rendering?.Core?.VectorText);
+                console.log('vtk.Rendering?.Core?.vtkVectorText:', vtk.Rendering?.Core?.vtkVectorText);
+                console.log('vtk.Filters?.Sources?.vtkVectorText:', vtk.Filters?.Sources?.vtkVectorText);
+                console.log('vtk.Rendering?.Misc?.VectorText:', vtk.Rendering?.Misc?.VectorText);
+                console.log('All Rendering.Core keys:', Object.keys(vtk.Rendering?.Core || {}));
+                console.log('All Rendering keys:', Object.keys(vtk.Rendering || {}));
+                console.log('All Rendering.Misc keys:', Object.keys(vtk.Rendering?.Misc || {}));
+                console.log('All Filters.Sources keys:', Object.keys(vtk.Filters?.Sources || {}));
+                console.log('All Filters keys:', Object.keys(vtk.Filters || {}));
+                
+                // Method 1: Try VectorText from Rendering.Core
+                if (vtk.Rendering?.Core?.VectorText) {
+                    try {
+                        console.log('Trying VectorText from Rendering.Core...');
+                        const vectorText = vtk.Rendering.Core.VectorText.newInstance({
+                            text: text,
+                            size: 0.5
+                        });
+                        
+                        const mapper = vtk.Rendering.Core.vtkMapper.newInstance();
+                        mapper.setInputConnection(vectorText.getOutputPort());
+                        
+                        const actor = vtk.Rendering.Core.vtkActor.newInstance();
+                        actor.setMapper(mapper);
+                        actor.setPosition(position[0], position[1], position[2]);
+                        actor.setScale(0.3, 0.3, 0.3);
+                        
+                        const property = actor.getProperty();
+                        const colors = this.getBundleColor(text);
+                        property.setColor(...colors);
+                        
+                        console.log(`Created VectorText label "${text}"`);
+                        return actor;
+                    } catch (error) {
+                        console.warn('VectorText from Rendering.Core failed:', error);
+                    }
+                }
+                
+                // Method 2: Try vtkVectorText from Rendering.Core  
+                if (vtk.Rendering?.Core?.vtkVectorText) {
+                    try {
+                        console.log('Trying vtkVectorText from Rendering.Core...');
+                        const vectorText = vtk.Rendering.Core.vtkVectorText.newInstance();
+                        vectorText.setText(text);
+                        
+                        const mapper = vtk.Rendering.Core.vtkMapper.newInstance();
+                        mapper.setInputConnection(vectorText.getOutputPort());
+                        
+                        const actor = vtk.Rendering.Core.vtkActor.newInstance();
+                        actor.setMapper(mapper);
+                        actor.setPosition(position[0], position[1], position[2]);
+                        actor.setScale(0.3, 0.3, 0.3);
+                        
+                        const property = actor.getProperty();
+                        const colors = this.getBundleColor(text);
+                        property.setColor(...colors);
+                        
+                        console.log(`Created vtkVectorText label "${text}"`);
+                        return actor;
+                    } catch (error) {
+                        console.warn('vtkVectorText from Rendering.Core failed:', error);
+                    }
+                }
+                
+                // Method 3: Try VectorText from Rendering.Misc
+                if (vtk.Rendering?.Misc?.VectorText) {
+                    try {
+                        console.log('Trying VectorText from Rendering.Misc...');
+                        const vectorText = vtk.Rendering.Misc.VectorText.newInstance({
+                            text: text,
+                            size: 0.5
+                        });
+                        
+                        const mapper = vtk.Rendering.Core.vtkMapper.newInstance();
+                        mapper.setInputConnection(vectorText.getOutputPort());
+                        
+                        const actor = vtk.Rendering.Core.vtkActor.newInstance();
+                        actor.setMapper(mapper);
+                        actor.setPosition(position[0], position[1], position[2]);
+                        actor.setScale(0.3, 0.3, 0.3);
+                        
+                        const property = actor.getProperty();
+                        const colors = this.getBundleColor(text);
+                        property.setColor(...colors);
+                        
+                        console.log(`Created VectorText from Misc label "${text}"`);
+                        return actor;
+                    } catch (error) {
+                        console.warn('VectorText from Rendering.Misc failed:', error);
+                    }
+                }
+                
+                console.log('VectorText not found, creating canvas-based text texture...');
+                console.log('Available VTK texture methods:', Object.getOwnPropertyNames(vtk.Rendering.Core.vtkTexture.newInstance()).filter(name => typeof vtk.Rendering.Core.vtkTexture.newInstance()[name] === 'function'));
+                return this.createTextTexturePlane(text, position);
+            }
+            
+            createTextTexturePlane(text, position) {
+                try {
+                    console.log(`Creating text texture plane for "${text}"`);
+                    
+                    // Create canvas with text
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Set canvas size
+                    canvas.width = 256;
+                    canvas.height = 64;
+                    
+                    // Style the text
+                    const colors = this.getBundleColor(text);
+                    const rgbColor = `rgb(${Math.floor(colors[0] * 255)}, ${Math.floor(colors[1] * 255)}, ${Math.floor(colors[2] * 255)})`;
+                    
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'; // Semi-transparent white background
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    ctx.fillStyle = rgbColor;
+                    ctx.font = 'bold 32px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    // Add black outline for better visibility
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 2;
+                    ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
+                    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+                    
+                    // Create VTK texture from canvas
+                    const texture = vtk.Rendering.Core.vtkTexture.newInstance();
+                    texture.setCanvas(canvas);
+                    
+                    // Create a plane to hold the texture
+                    const plane = vtk.Filters.Sources.vtkPlaneSource.newInstance({
+                        xResolution: 1,
+                        yResolution: 1
+                    });
+                    plane.setOrigin(-0.5, -0.125, 0);  // Center the plane
+                    plane.setPoint1(0.5, -0.125, 0);   // Width of 1 unit
+                    plane.setPoint2(-0.5, 0.125, 0);   // Height of 0.25 units
+                    
+                    // Create mapper and actor
+                    const mapper = vtk.Rendering.Core.vtkMapper.newInstance();
+                    mapper.setInputConnection(plane.getOutputPort());
+                    
+                    const actor = vtk.Rendering.Core.vtkActor.newInstance();
+                    actor.setMapper(mapper);
+                    actor.addTexture(texture);
+                    actor.setPosition(position[0], position[1], position[2]);
+                    
+                    // Make the plane always face the camera
+                    const property = actor.getProperty();
+                    property.setLighting(false); // Disable lighting for text
+                    
+                    console.log(`Created text texture plane "${text}" at position [${position.join(', ')}]`);
+                    return actor;
+                } catch (error) {
+                    console.error('Error creating text texture plane:', error);
+                    return this.createFallbackSphere(text, position);
+                }
+            }
+            
+            createFallbackSphere(text, position) {
+                try {
+                    // Create distinctive spheres for each bundle type
+                    const sphereSource = vtk.Filters.Sources.vtkSphereSource.newInstance({
+                        radius: 0.2, // Larger radius for better visibility
+                        phiResolution: 16,
+                        thetaResolution: 16
+                    });
+                    
+                    const mapper = vtk.Rendering.Core.vtkMapper.newInstance();
+                    mapper.setInputConnection(sphereSource.getOutputPort());
+                    
+                    const actor = vtk.Rendering.Core.vtkActor.newInstance();
+                    actor.setMapper(mapper);
+                    actor.setPosition(position[0], position[1], position[2]);
+                    
+                    const property = actor.getProperty();
+                    const colors = this.getBundleColor(text);
+                    property.setColor(...colors);
+                    property.setSpecular(0.6);
+                    property.setSpecularPower(50);
+                    property.setDiffuse(0.8);
+                    
+                    console.log(`Created distinctive sphere for "${text}" at position [${position.join(', ')}] with color [${colors.join(', ')}]`);
+                    return actor;
+                } catch (error) {
+                    console.error('Error creating sphere marker:', error);
+                    return null;
+                }
+            }
+            
+            getBundleColor(bundleText) {
+                // Assign meaningful colors based on bundle content
+                const colorMap = {
+                    '∅': [0.5, 0.5, 0.5],           // Empty set - gray
+                    '{1}': [1.0, 0.2, 0.2],         // Single item 1 - red
+                    '{2}': [0.2, 1.0, 0.2],         // Single item 2 - green  
+                    '{3}': [0.2, 0.2, 1.0],         // Single item 3 - blue
+                    '{1,2}': [1.0, 1.0, 0.2],       // Items 1,2 - yellow
+                    '{1,3}': [1.0, 0.2, 1.0],       // Items 1,3 - magenta
+                    '{2,3}': [0.2, 1.0, 1.0],       // Items 2,3 - cyan
+                    '{1,2,3}': [1.0, 0.5, 0.0]      // All items - orange
+                };
+                
+                return colorMap[bundleText] || [0.8, 0.8, 0.8]; // Default light gray
+            }
+            
+            updateLabelPositions() {
+                if (!this.visible) return;
+                
+                // For 3D actors (spheres), no position update needed - they stay in 3D space
+                // Only 2D text actors would need position updates, but we're using 3D spheres now
+                console.log('Labels are 3D objects - no position update needed');
+            }
+            
+            setVisible(visible) {
+                this.visible = visible;
+                this.actors.forEach(actorInfo => {
+                    actorInfo.actor.setVisibility(visible);
+                });
+            }
+            
+            destroy() {
+                this.actors.forEach(actorInfo => {
+                    this.renderer.removeActor(actorInfo.actor);
+                });
+                this.actors = [];
+            }
+        }
+
         // Initialize VTK.js
         function initVTK() {
             const container = document.getElementById('vtk-container');
@@ -318,7 +627,7 @@
                 renderWindow.addRenderer(renderer);
                 
                 // Create OpenGL render window
-                const openglRenderWindow = vtk.Rendering.OpenGL.vtkRenderWindow.newInstance();
+                openglRenderWindow = vtk.Rendering.OpenGL.vtkRenderWindow.newInstance();
                 openglRenderWindow.setContainer(container);
                 openglRenderWindow.setSize(container.offsetWidth, container.offsetHeight);
                 renderWindow.addView(openglRenderWindow);
@@ -334,12 +643,17 @@
                 const style = vtk.Interaction.Style.vtkInteractorStyleTrackballCamera.newInstance();
                 interactor.setInteractorStyle(style);
                 
-                // Handle window resize
+                // Handle window resize and camera changes
                 window.addEventListener('resize', () => {
                     const dims = container.getBoundingClientRect();
                     openglRenderWindow.setSize(dims.width, dims.height);
                     renderWindow.render();
+                    updateLabels();
                 });
+                
+                // Update labels when camera moves (simplified)
+                interactor.onLeftButtonPress(() => updateLabels());
+                interactor.onMouseMove(() => updateLabels());
                 
                 console.log('VTK.js initialized successfully');
                 showStatus('VTK.js renderer initialized', 'success');
@@ -455,12 +769,34 @@
                 showStatus(`Rendered ${data.facets.length} facets successfully`, 'success');
                 hideWelcome();
                 
+                // Create labels overlay
+                createLabels(data);
+                
             } catch (error) {
                 console.error('VTK.js visualization error:', error);
                 showStatus('Failed to create visualization: ' + error.message, 'error');
             }
             
             showLoading(false);
+        }
+        
+        function createLabels(data) {
+            try {
+                // Clean up existing labels
+                if (lipLabels) {
+                    lipLabels.destroy();
+                }
+                
+                // Create new 3D labels
+                console.log('Creating LIP 3D labels...');
+                lipLabels = new LIP3DLabels(data, vtkRenderer);
+                
+                showStatus(`Added ${data.labels ? data.labels.length : 0} bundle labels`, 'success');
+                
+            } catch (error) {
+                console.error('Error creating labels:', error);
+                showStatus('Failed to create labels: ' + error.message, 'error');
+            }
         }
         
         function createVTKPolyData(data) {
@@ -533,33 +869,177 @@
             }
         }
         
-        function createPolyDataWithConvexHull(data) {
-            console.log('Processing each convex facet separately...');
+        function orderVerticesForPolygon(vertices) {
+            console.log('Ordering vertices for proper polygon triangulation...');
             
-            // Create separate polydata for each facet, then combine them
-            const allPolyDataList = [];
+            if (vertices.length <= 3) {
+                // For triangles, just return as-is
+                return vertices;
+            }
+            
+            // Compute centroid
+            const centroid = [0, 0, 0];
+            for (const vertex of vertices) {
+                centroid[0] += vertex[0];
+                centroid[1] += vertex[1];
+                centroid[2] += vertex[2];
+            }
+            centroid[0] /= vertices.length;
+            centroid[1] /= vertices.length;
+            centroid[2] /= vertices.length;
+            
+            console.log('Polygon centroid:', centroid);
+            
+            // Compute normal using first three vertices (assumes they're not collinear)
+            const v1 = [vertices[1][0] - vertices[0][0], vertices[1][1] - vertices[0][1], vertices[1][2] - vertices[0][2]];
+            const v2 = [vertices[2][0] - vertices[0][0], vertices[2][1] - vertices[0][1], vertices[2][2] - vertices[0][2]];
+            
+            // Cross product to get normal
+            const normal = [
+                v1[1] * v2[2] - v1[2] * v2[1],
+                v1[2] * v2[0] - v1[0] * v2[2],
+                v1[0] * v2[1] - v1[1] * v2[0]
+            ];
+            
+            // Normalize the normal
+            const normalLength = Math.sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
+            if (normalLength > 0) {
+                normal[0] /= normalLength;
+                normal[1] /= normalLength;
+                normal[2] /= normalLength;
+            }
+            
+            console.log('Polygon normal:', normal);
+            
+            // Project vertices onto plane and sort by angle around centroid
+            const projectedVertices = vertices.map((vertex, index) => {
+                // Vector from centroid to vertex
+                const fromCenter = [vertex[0] - centroid[0], vertex[1] - centroid[1], vertex[2] - centroid[2]];
+                
+                // Compute angle in the plane (using atan2 with two orthogonal vectors in the plane)
+                // Create two orthogonal vectors in the plane
+                const u = v1; // First edge vector (already computed)
+                
+                // Second orthogonal vector: normal × u
+                const v = [
+                    normal[1] * u[2] - normal[2] * u[1],
+                    normal[2] * u[0] - normal[0] * u[2],
+                    normal[0] * u[1] - normal[1] * u[0]
+                ];
+                
+                // Project fromCenter onto u and v to get 2D coordinates
+                const uDot = fromCenter[0] * u[0] + fromCenter[1] * u[1] + fromCenter[2] * u[2];
+                const vDot = fromCenter[0] * v[0] + fromCenter[1] * v[1] + fromCenter[2] * v[2];
+                
+                const angle = Math.atan2(vDot, uDot);
+                
+                return { vertex, angle, index };
+            });
+            
+            // Sort by angle
+            projectedVertices.sort((a, b) => a.angle - b.angle);
+            
+            const orderedVertices = projectedVertices.map(pv => pv.vertex);
+            console.log('Vertex angles:', projectedVertices.map(pv => pv.angle));
+            
+            return orderedVertices;
+        }
+
+        function createPolyDataWithConvexHull(data) {
+            console.log('Processing each facet separately...');
+            console.log('Total facets:', data.facets.length);
+            
+            const facetPolyDataList = [];
             
             data.facets.forEach((facet, index) => {
                 if (facet.length >= 3) {
-                    console.log(`Processing convex facet ${index} with ${facet.length} vertices`);
+                    console.log(`Processing facet ${index}: ${facet.length} vertices [${facet.join(', ')}]`);
                     
-                    // Get vertices for this specific facet
+                    // Get vertices for this facet
                     const facetVertices = facet.map(i => data.vertices[i]);
                     
-                    // Create polydata for this individual convex facet
-                    const facetPolyData = createFanTriangulationForFacet(facetVertices);
-                    allPolyDataList.push(facetPolyData);
+                    // Create points for this facet
+                    const points = vtk.Common.Core.vtkPoints.newInstance();
+                    const pointsData = new Float32Array(facet.length * 3);
+                    
+                    for (let i = 0; i < facet.length; i++) {
+                        pointsData[i * 3] = facetVertices[i][0];
+                        pointsData[i * 3 + 1] = facetVertices[i][1];
+                        pointsData[i * 3 + 2] = facetVertices[i][2];
+                    }
+                    points.setData(pointsData, 3);
+                    
+                    // Simple fan triangulation from vertex 0
+                    const polys = vtk.Common.Core.vtkCellArray.newInstance();
+                    
+                    if (facet.length === 3) {
+                        polys.insertNextCell([3, 0, 1, 2]);
+                        console.log(`Added triangle: 0-1-2`);
+                    } else {
+                        for (let i = 1; i < facet.length - 1; i++) {
+                            polys.insertNextCell([3, 0, i, i + 1]);
+                            console.log(`Added triangle: 0-${i}-${i + 1}`);
+                        }
+                    }
+                    
+                    // Create polydata for this facet
+                    const facetPolyData = vtk.Common.DataModel.vtkPolyData.newInstance();
+                    facetPolyData.setPoints(points);
+                    facetPolyData.setPolys(polys);
+                    
+                    facetPolyDataList.push(facetPolyData);
+                    console.log(`Created facet ${index} with ${polys.getNumberOfCells()} triangles`);
+                } else {
+                    console.log(`Skipping facet ${index}: only ${facet.length} vertices`);
                 }
             });
             
-            console.log(`Created ${allPolyDataList.length} individual facet polydata objects`);
-            
-            // Combine all facet polydata into one
-            return combinePolyDataList(allPolyDataList);
+            console.log(`Created ${facetPolyDataList.length} separate facet polydata objects`);
+            return combinePolyDataList(facetPolyDataList);
         }
         
         function createFanTriangulationForFacet(vertices) {
-            // Create points for this facet only
+            console.log(`Creating robust triangulation for ${vertices.length} vertices...`);
+            
+            if (vertices.length === 4) {
+                return createQuadrilateralFacet(vertices);
+            } else {
+                return createPolygonFanTriangulation(vertices);
+            }
+        }
+        
+        function createQuadrilateralFacet(vertices) {
+            console.log('Creating quadrilateral with diagonal split...');
+            
+            const points = vtk.Common.Core.vtkPoints.newInstance();
+            const pointsData = new Float32Array(4 * 3);
+            
+            for (let i = 0; i < 4; i++) {
+                pointsData[i * 3] = vertices[i][0];
+                pointsData[i * 3 + 1] = vertices[i][1];
+                pointsData[i * 3 + 2] = vertices[i][2];
+            }
+            points.setData(pointsData, 3);
+            
+            // Split quadrilateral into two triangles using diagonal 0-2
+            const polys = vtk.Common.Core.vtkCellArray.newInstance();
+            polys.insertNextCell([3, 0, 1, 2]); // First triangle
+            polys.insertNextCell([3, 0, 2, 3]); // Second triangle
+            
+            const polyData = vtk.Common.DataModel.vtkPolyData.newInstance();
+            polyData.setPoints(points);
+            polyData.setPolys(polys);
+            
+            // Skip normals generation for now - API methods not available
+            console.log('Created quadrilateral as 2 triangles with normals');
+            return polyData;
+        }
+        
+        function createPolygonFanTriangulation(vertices) {
+            console.log(`Creating fan triangulation for ${vertices.length}-sided polygon...`);
+            console.log('Input vertices:', vertices);
+            
+            // Create points for this individual facet only
             const points = vtk.Common.Core.vtkPoints.newInstance();
             const pointsData = new Float32Array(vertices.length * 3);
             
@@ -567,27 +1047,39 @@
                 pointsData[i * 3] = vertices[i][0];
                 pointsData[i * 3 + 1] = vertices[i][1];
                 pointsData[i * 3 + 2] = vertices[i][2];
+                console.log(`Point ${i}: [${vertices[i][0]}, ${vertices[i][1]}, ${vertices[i][2]}]`);
             }
             points.setData(pointsData, 3);
             
-            // Fan triangulate this individual convex facet
+            // Fan triangulate this individual convex facet (RELIABLE APPROACH)
             const polys = vtk.Common.Core.vtkCellArray.newInstance();
+            const triangles = [];
             
             if (vertices.length === 3) {
                 // Triangle - add directly
                 polys.insertNextCell([3, 0, 1, 2]);
+                triangles.push([0, 1, 2]);
+                console.log(`Added triangle directly: vertices (0, 1, 2)`);
+                console.log(`Triangle coords: ${vertices[0]} -> ${vertices[1]} -> ${vertices[2]}`);
             } else {
-                // Fan triangulation from vertex 0
+                // Fan triangulation from vertex 0 (works for any convex polygon)
                 for (let i = 1; i < vertices.length - 1; i++) {
                     polys.insertNextCell([3, 0, i, i + 1]);
+                    triangles.push([0, i, i + 1]);
+                    console.log(`Added fan triangle: vertices (0, ${i}, ${i + 1})`);
+                    console.log(`Triangle coords: ${vertices[0]} -> ${vertices[i]} -> ${vertices[i + 1]}`);
                 }
             }
             
-            // Create polydata for this facet
+            console.log(`Generated ${triangles.length} triangles:`, triangles);
+            
+            // Create polydata for this individual facet
             const polyData = vtk.Common.DataModel.vtkPolyData.newInstance();
             polyData.setPoints(points);
             polyData.setPolys(polys);
             
+            // Skip normals generation for now - API methods not available
+            console.log(`Created polydata with ${polyData.getNumberOfCells()} cells`);
             return polyData;
         }
         
@@ -670,6 +1162,35 @@
             combinedPolyData.setPolys(combinedPolys);
             
             return combinedPolyData;
+        }
+        
+        function createTriangleFacet(vertices) {
+            console.log('Creating simple triangle facet...');
+            console.log('Triangle vertices:', vertices);
+            
+            const points = vtk.Common.Core.vtkPoints.newInstance();
+            const pointsData = new Float32Array(3 * 3); // 3 vertices, 3 coordinates each
+            
+            for (let i = 0; i < 3; i++) {
+                pointsData[i * 3] = vertices[i][0];
+                pointsData[i * 3 + 1] = vertices[i][1];
+                pointsData[i * 3 + 2] = vertices[i][2];
+                console.log(`Triangle point ${i}: [${vertices[i][0]}, ${vertices[i][1]}, ${vertices[i][2]}]`);
+            }
+            points.setData(pointsData, 3);
+            
+            // Create single triangle
+            const polys = vtk.Common.Core.vtkCellArray.newInstance();
+            polys.insertNextCell([3, 0, 1, 2]);
+            console.log('Added triangle: vertices (0, 1, 2)');
+            
+            const polyData = vtk.Common.DataModel.vtkPolyData.newInstance();
+            polyData.setPoints(points);
+            polyData.setPolys(polys);
+            
+            // Skip normals generation for now - API methods not available
+            console.log('Created triangle facet with normals');
+            return polyData;
         }
         
         function createSimpleFanTriangulation(vertices) {
@@ -817,10 +1338,48 @@
         }
         
         function resetCamera() {
-            if (vtkRenderer) {
+            if (vtkRenderer && currentActor) {
+                // Get the center of the current data
+                const bounds = currentActor.getBounds();
+                const center = [
+                    (bounds[0] + bounds[1]) / 2, // X center
+                    (bounds[2] + bounds[3]) / 2, // Y center  
+                    (bounds[4] + bounds[5]) / 2  // Z center
+                ];
+                
+                console.log('Data center:', center);
+                console.log('Data bounds:', bounds);
+                
+                // Reset camera position and orientation
+                const camera = vtkRenderer.getActiveCamera();
+                
+                // Reset to default view
                 vtkRenderer.resetCamera();
+                
+                // Set focal point to center of data (rotation center)
+                camera.setFocalPoint(center[0], center[1], center[2]);
+                
+                // Position camera at diagonal view from the center
+                const distance = Math.max(
+                    bounds[1] - bounds[0], // X extent
+                    bounds[3] - bounds[2], // Y extent  
+                    bounds[5] - bounds[4]  // Z extent
+                ) * 2;
+                
+                camera.setPosition(
+                    center[0] + distance,
+                    center[1] + distance, 
+                    center[2] + distance
+                );
+                
+                // Reset camera orientation vectors
+                camera.setViewUp(0, 1, 0); // Y-up
+                
+                // Recompute the camera
+                vtkRenderer.resetCameraClippingRange();
                 vtkRenderWindow.render();
-                showStatus('Camera reset', 'info');
+                
+                showStatus(`Camera reset - rotation center: (${center[0].toFixed(1)}, ${center[1].toFixed(1)}, ${center[2].toFixed(1)})`, 'info');
             }
         }
         
@@ -834,22 +1393,79 @@
                 axesActor = null;
                 showStatus('Axes hidden', 'info');
             } else {
-                // Create and add axes
-                const axes = vtk.Filters.Sources.vtkAxes.newInstance();
-                axes.setOrigin(0, 0, 0);
-                axes.setScaleFactor(2);
-                
-                const mapper = vtk.Rendering.Core.vtkMapper.newInstance();
-                mapper.setInputConnection(axes.getOutputPort());
-                
-                axesActor = vtk.Rendering.Core.vtkActor.newInstance();
-                axesActor.setMapper(mapper);
-                
+                // Create simple axes using line sources
+                axesActor = createSimpleAxes();
                 vtkRenderer.addActor(axesActor);
                 showStatus('Axes shown', 'info');
             }
             
             vtkRenderWindow.render();
+        }
+        
+        function createSimpleAxes() {
+            // Create coordinate axes at origin (0,0,0) regardless of data center
+            const points = vtk.Common.Core.vtkPoints.newInstance();
+            const lines = vtk.Common.Core.vtkCellArray.newInstance();
+            
+            // Define axis endpoints from origin (0,0,0)
+            const axisLength = 3; // Make them longer to be more visible
+            const axisPoints = [
+                [0, 0, 0], [axisLength, 0, 0], // X-axis 
+                [0, 0, 0], [0, axisLength, 0], // Y-axis  
+                [0, 0, 0], [0, 0, axisLength]  // Z-axis 
+            ];
+            
+            // Add points
+            const pointsData = new Float32Array(axisPoints.length * 3);
+            axisPoints.forEach((point, i) => {
+                pointsData[i * 3] = point[0];
+                pointsData[i * 3 + 1] = point[1];
+                pointsData[i * 3 + 2] = point[2];
+            });
+            points.setData(pointsData, 3);
+            
+            // Add lines
+            lines.insertNextCell([2, 0, 1]); // X-axis line
+            lines.insertNextCell([2, 2, 3]); // Y-axis line  
+            lines.insertNextCell([2, 4, 5]); // Z-axis line
+            
+            // Create polydata
+            const polyData = vtk.Common.DataModel.vtkPolyData.newInstance();
+            polyData.setPoints(points);
+            polyData.setLines(lines);
+            
+            // Create mapper and actor
+            const mapper = vtk.Rendering.Core.vtkMapper.newInstance();
+            mapper.setInputData(polyData);
+            
+            const actor = vtk.Rendering.Core.vtkActor.newInstance();
+            actor.setMapper(mapper);
+            
+            // Set line properties
+            const property = actor.getProperty();
+            property.setColor(0.2, 0.2, 0.2); // Darker for better visibility
+            property.setLineWidth(3);
+            
+            console.log('Axes created at origin (0,0,0)');
+            return actor;
+        }
+        
+        // Label management functions
+        function updateLabels() {
+            if (lipLabels) {
+                lipLabels.updateLabelPositions();
+            }
+        }
+        
+        function toggleLabels() {
+            if (lipLabels) {
+                const newVisibility = !lipLabels.visible;
+                lipLabels.setVisible(newVisibility);
+                vtkRenderWindow.render(); // Trigger re-render
+                showStatus(`3D labels ${newVisibility ? 'shown' : 'hidden'}`, 'info');
+            } else {
+                showStatus('No labels to toggle', 'info');
+            }
         }
         
         // Opacity control

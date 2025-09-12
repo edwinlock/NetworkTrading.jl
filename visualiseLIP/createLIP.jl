@@ -10,6 +10,11 @@ using Polyhedra
 using JSON3
 using LinearAlgebra
 using GLPK
+using Combinatorics
+using Random
+
+# Use the NetworkTrading module which already includes all the iterators
+using NetworkTrading
 
 # Type aliases
 const Prices = Vector{Rational{Int}}
@@ -110,24 +115,24 @@ end
 # ============================================================================
 
 """
-    create_bounding_box(n_dims, M)
+    create_bounding_box(n_dims, L, U)
 
-Create bounding box [0,M]^n by intersecting halfspaces: 
-0 ≤ p_i ≤ M for all dimensions i.
+Create bounding box [L,U]^n by intersecting halfspaces: 
+L ≤ p_i ≤ U for all dimensions i.
 """
-function create_bounding_box(n_dims::Int, M::Rational{Int})
+function create_bounding_box(n_dims::Int, L::Rational{Int}, U::Rational{Int})
     constraints = HalfSpace{Rational{Int}}[]
     
     for i in 1:n_dims
-        # Lower bound: p_i ≥ 0  =>  -p_i ≤ 0
+        # Lower bound: p_i ≥ L  =>  -p_i ≤ -L
         lower_coeffs = zeros(Rational{Int}, n_dims)
         lower_coeffs[i] = -1
-        push!(constraints, HalfSpace(lower_coeffs, 0//1))
+        push!(constraints, HalfSpace(lower_coeffs, -L))
         
-        # Upper bound: p_i ≤ M  =>  p_i ≤ M  
+        # Upper bound: p_i ≤ U  =>  p_i ≤ U  
         upper_coeffs = zeros(Rational{Int}, n_dims)
         upper_coeffs[i] = 1
-        push!(constraints, HalfSpace(upper_coeffs, M))
+        push!(constraints, HalfSpace(upper_coeffs, U))
     end
     
     # Return the intersection of all bounding constraints
@@ -159,18 +164,18 @@ function compute_polyhedron(Φ::Bundle, A::Vector{Bundle}, halfspaces::Dict{Tupl
 end
 
 """
-    compute_all_polyhedra(A, v, χ, M)
+    compute_all_polyhedra(A, v, χ, L, U)
 
-Compute all polyhedra P_Φ for all bundles Φ ∈ A with bounding box [0,M]^n.
+Compute all polyhedra P_Φ for all bundles Φ ∈ A with bounding box [L,U]^n.
 Returns a dictionary mapping bundles to their polyhedra.
 """
-function compute_all_polyhedra(A::Vector{Bundle}, v::Function, χ::Prices, M::Rational{Int})
+function compute_all_polyhedra(A::Vector{Bundle}, v::Function, χ::Prices, L::Rational{Int}, U::Rational{Int})
     # First compute all halfspaces once
     halfspaces = compute_all_halfspaces(A, v, χ)
     
     # Create bounding box
     n_dims = length(χ)
-    bounding_box = create_bounding_box(n_dims, M)
+    bounding_box = create_bounding_box(n_dims, L, U)
     
     # Then compute each polyhedron using the precomputed halfspaces and bounding box
     polyhedra = Dict{Bundle, Any}()
@@ -385,7 +390,11 @@ end
 Convert rational vertices to float arrays for JSON compatibility.
 """
 function vertices_to_json_format(vertices::Vector{Prices})
-    return [[Float64(coord) for coord in vertex] for vertex in vertices]
+    return [[clean_float(Float64(coord)) for coord in vertex] for vertex in vertices]
+end
+
+function clean_float(x::Float64)
+    return Float64(round(Int, x))
 end
 
 """
@@ -404,7 +413,7 @@ end
 Convert label positions to JSON format.
 """
 function labels_to_json_format(labels::Vector{Prices})
-    return [[Float64(coord) for coord in label] for label in labels]
+    return [[clean_float(Float64(coord)) for coord in label] for label in labels]
 end
 
 """
@@ -435,23 +444,25 @@ end
 # ============================================================================
 
 """
-    create_LIP_json(v::Function, A, χ, M)
+    create_LIP_json(v::Function, A, χ, L, U)
 
 Create the LIP JSON file for visualization given:
 - v: valuation function mapping bundles (sets) to integers
 - A: vector of bundles (domain of the valuation)
 - χ: coefficient vector indicating buyer (+1) or seller (-1) role for each trade
-- M: maximum value for bounding box [0,M]^n
+- L: minimum value for bounding box [L,U]^n
+- U: maximum value for bounding box [L,U]^n
 
 Returns a JSON-compatible dictionary with vertices, facets, labels, and bundles.
 """
-function create_LIP_json(v::Function, A::Vector{Bundle}, χ::Vector{<:Real}, M::Real)
-    # Convert χ and M to rational for exact arithmetic
+function create_LIP_json(v::Function, A::Vector{Bundle}, χ::Vector{<:Real}, L::Real, U::Real)
+    # Convert χ, L, and U to rational for exact arithmetic
     χ_rational = Rational{Int}.(χ)
-    M_rational = Rational{Int}(M)
+    L_rational = Rational{Int}(L)
+    U_rational = Rational{Int}(U)
     
     # Compute all polyhedra P_Φ for each bundle Φ ∈ A with bounding box
-    polyhedra = compute_all_polyhedra(A, v, χ_rational, M_rational)
+    polyhedra = compute_all_polyhedra(A, v, χ_rational, L_rational, U_rational)
     
     # Compute all facets and extract vertices
     facets, vertices = compute_all_facets(polyhedra, A)
@@ -466,12 +477,12 @@ function create_LIP_json(v::Function, A::Vector{Bundle}, χ::Vector{<:Real}, M::
 end
 
 """
-    create_LIP_json_file(filename::String, v::Function, A, χ, M)
+    create_LIP_json_file(filename::String, v::Function, A, χ, L, U)
 
 Create and save the LIP JSON file to disk.
 """
-function create_LIP_json_file(filename::String, v::Function, A::Vector{Bundle}, χ::Vector{<:Real}, M::Real)
-    json_data = create_LIP_json(v, A, χ, M)
+function create_LIP_json_file(filename::String, v::Function, A::Vector{Bundle}, χ::Vector{<:Real}, L::Real, U::Real)
+    json_data = create_LIP_json(v, A, χ, L, U)
     
     open(filename, "w") do io
         JSON3.pretty(io, json_data, indent=2)
@@ -522,10 +533,11 @@ function test_create_LIP()
     println("Testing LIP creation...")
     
     v, A, χ = create_test_example()
-    M = 10  # Bounding box [0,10]^3
+    L = -15  # Bounding box [L,U]^3
+    U = 15
     
     try
-        json_data = create_LIP_json(v, A, χ, M)
+        json_data = create_LIP_json(v, A, χ, L, U)
         
         println("✓ Successfully created LIP JSON")
         println("  - Vertices: $(length(json_data["vertices"]))")
@@ -566,4 +578,105 @@ function generate_test_LIP_file(filename::String = "LIP.json")
         println("✗ Error generating LIP file: $e")
         rethrow(e)
     end
+end
+
+# ============================================================================
+# Random substitutable valuation functions
+# ============================================================================
+
+"""
+    create_random_LIP_file(filename::String, n_trades::Int, ub::Int = 10, L::Real = -15, U::Real = 15; seed::Union{Nothing, Int} = nothing)
+
+Create a LIP JSON file for a randomly sampled fully substitutable valuation of a pure buyer.
+
+Arguments:
+- `filename`: Output JSON filename
+- `n_trades`: Number of trades (1, 2, or 3 supported)
+- `ub`: Upper bound for valuation values (must be compatible with available data files)
+- `L`: Bounding box minimum [L,U]^n for price space
+- `U`: Bounding box maximum [L,U]^n for price space
+- `seed`: Random seed for reproducibility (optional)
+
+A "pure buyer" means the agent is buying all trades (no selling trades).
+The function samples uniformly at random from the space of fully substitutable valuations.
+"""
+function create_random_LIP_file(filename::String, n_trades::Int, ub::Int = 10, L::Real = -15, U::Real = 15; seed::Union{Nothing, Int} = nothing)
+    println("Creating random LIP file for pure buyer with $n_trades trades...")
+    println("  - Upper bound: $ub")
+    println("  - Bounding box: [$L,$U]^$n_trades")
+    
+    # Set random seed if provided
+    if seed !== nothing
+        Random.seed!(seed)
+        println("  - Random seed: $seed")
+    end
+    
+    try
+        # For a pure buyer, all trades are buying trades, no selling trades
+        buyingtrades = Set(1:n_trades)
+        sellingtrades = Set{Int}()
+        
+        println("  - Buying trades: $buyingtrades")
+        println("  - Selling trades: $sellingtrades")
+        
+        # Create the substitutes iterator
+        iter = SubstitutesValuations(buyingtrades, sellingtrades, ub)
+        
+        println("  - Available valuations: $(length(iter))")
+        
+        # Sample a random valuation
+        v = rand(iter)
+        
+        # Create the domain A as all possible bundles of trades
+        # This is the powerset of all trades {1, 2, ..., n_trades}
+        A = [Bundle(subset) for subset in powerset(1:n_trades)]
+        
+        println("  - Domain size |A|: $(length(A))")
+        println("  - Domain A: $(sort([bundle_to_string(bundle) for bundle in A]))")
+        
+        # For a pure buyer, χ[i] = +1 for all trades (buyer role)
+        χ = fill(1//1, n_trades)
+        
+        println("  - Coefficient vector χ: $χ (pure buyer)")
+        
+        # Test the valuation on a few bundles to verify it works
+        println("  - Testing valuation:")
+        for (i, bundle) in enumerate(A[1:min(4, length(A))])
+            val = v(bundle)
+            println("    v($(bundle_to_string(bundle))) = $val")
+        end
+        
+        # Create the LIP JSON
+        println("  - Computing LIP polyhedra...")
+        json_data = create_LIP_json(v, A, χ, L, U)
+        
+        # Save to file
+        open(filename, "w") do io
+            JSON3.pretty(io, json_data)
+        end
+        
+        println("✓ Successfully created random LIP file: $filename")
+        println("  - Vertices: $(length(json_data["vertices"]))")
+        println("  - Facets: $(length(json_data["facets"]))")
+        println("  - Labels: $(length(json_data["labels"]))")
+        println("  - Bundles: $(length(json_data["bundles"]))")
+        println("  - File size: $(stat(filename).size) bytes")
+        
+        return json_data, v
+    catch e
+        println("✗ Error creating random LIP file: $e")
+        rethrow(e)
+    end
+end
+
+"""
+    create_random_LIP_file(filename::String; kwargs...)
+
+Convenience method that creates a random LIP file with default parameters:
+- 3 trades (maximum supported)
+- Upper bound 10 
+- Bounding box [0,10]^3
+"""
+function create_random_LIP_file(filename::String; kwargs...)
+    return create_random_LIP_file(filename, 3, 10, -15, 15; kwargs...)
 end
